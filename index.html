@@ -1,0 +1,2495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GrindBoard — Ronin's Competitive Layer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #090b0e;
+  --bg2: #0f1318;
+  --bg3: #151b22;
+  --surface: #1a2230;
+  --surface2: #1f2a3a;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --accent: #f5a623;
+  --accent2: #ff6b35;
+  --accent3: #00d4aa;
+  --accent4: #7c6af5;
+  --text: #e8edf5;
+  --text2: #8a96a8;
+  --text3: #4a5568;
+  --ronin: #006dff;
+  --ronin2: #0054cc;
+  --danger: #ff4757;
+  --success: #00d4aa;
+  --gold: #f5a623;
+  --silver: #a8b8cc;
+  --bronze: #cd7f4a;
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 18px;
+  --glow: 0 0 40px rgba(245,166,35,0.15);
+  --glow-sm: 0 0 20px rgba(245,166,35,0.1);
+  --shadow: 0 8px 32px rgba(0,0,0,0.5);
+  --transition: 0.2s cubic-bezier(0.4,0,0.2,1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--surface); border-radius: 3px; }
+
+/* NOISE OVERLAY */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* LAYOUT */
+.app { position: relative; z-index: 1; }
+
+/* NAV */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  height: 64px;
+  background: rgba(9,11,14,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.nav-logo .logo-mark {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 800;
+  color: #000;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  list-style: none;
+}
+
+.nav-links a {
+  color: var(--text2);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 400;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  letter-spacing: 0.01em;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wallet-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.wallet-btn:hover {
+  background: var(--surface2);
+  border-color: var(--accent);
+}
+
+.wallet-btn.connected {
+  background: rgba(0,212,170,0.1);
+  border-color: rgba(0,212,170,0.3);
+  color: var(--accent3);
+}
+
+.wallet-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent3);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.8); }
+}
+
+/* MAIN */
+main {
+  padding-top: 64px;
+}
+
+/* SECTIONS */
+.section { display: none; }
+.section.active { display: block; }
+
+/* ===== HERO / DASHBOARD ===== */
+.hero {
+  position: relative;
+  padding: 60px 32px 40px;
+  overflow: hidden;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 70% 40%, rgba(245,166,35,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 20% 60%, rgba(0,109,255,0.05) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+.hero-title-block {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.hero-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hero-eyebrow::before {
+  content: '';
+  display: block;
+  width: 20px;
+  height: 1px;
+  background: var(--accent);
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 4vw, 54px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -2px;
+  color: var(--text);
+}
+
+h1 .highlight {
+  color: var(--accent);
+  position: relative;
+}
+
+.hero-sub {
+  font-size: 15px;
+  color: var(--text2);
+  max-width: 500px;
+  margin-top: 12px;
+  line-height: 1.7;
+}
+
+/* STATS BAR */
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+
+.stat-item {
+  background: var(--bg2);
+  padding: 20px 24px;
+  position: relative;
+}
+
+.stat-item:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.stat-item:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.stat-value {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.stat-value .unit {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text2);
+  letter-spacing: 0;
+}
+
+.stat-change {
+  font-size: 11px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.stat-change.up { color: var(--success); }
+.stat-change.down { color: var(--danger); }
+
+/* CHALLENGE CARDS */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.section-title .count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text3);
+  margin-left: 8px;
+}
+
+.view-all {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  text-decoration: none;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: var(--transition);
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.view-all:hover { color: var(--text); }
+
+.challenges-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.challenge-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.challenge-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--card-accent, var(--accent)), transparent);
+  opacity: 0;
+  transition: var(--transition);
+}
+
+.challenge-card:hover {
+  border-color: var(--border2);
+  background: var(--bg3);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.challenge-card:hover::before { opacity: 1; }
+
+.challenge-card.hot { --card-accent: var(--accent2); }
+.challenge-card.new { --card-accent: var(--accent3); }
+.challenge-card.ending { --card-accent: var(--danger); }
+
+.card-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.badge-game {
+  background: rgba(124,106,245,0.15);
+  color: var(--accent4);
+  border: 1px solid rgba(124,106,245,0.2);
+}
+
+.badge-hot {
+  background: rgba(255,107,53,0.12);
+  color: var(--accent2);
+  border: 1px solid rgba(255,107,53,0.2);
+}
+
+.badge-new {
+  background: rgba(0,212,170,0.1);
+  color: var(--accent3);
+  border: 1px solid rgba(0,212,170,0.18);
+}
+
+.badge-ending {
+  background: rgba(255,71,87,0.1);
+  color: var(--danger);
+  border: 1px solid rgba(255,71,87,0.18);
+}
+
+.badge-battle { background: rgba(245,166,35,0.12); color: var(--gold); border: 1px solid rgba(245,166,35,0.2); }
+.badge-trade { background: rgba(0,109,255,0.12); color: #5b9dff; border: 1px solid rgba(0,109,255,0.2); }
+.badge-social { background: rgba(236,72,153,0.12); color: #ec4899; border: 1px solid rgba(236,72,153,0.2); }
+.badge-farm { background: rgba(34,197,94,0.12); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+
+.card-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 8px;
+  letter-spacing: -0.3px;
+}
+
+.card-desc {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.card-prize {
+  display: flex;
+  flex-direction: column;
+}
+
+.prize-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.prize-amount {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.prize-amount .ron {
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  color: var(--text2);
+  margin-left: 2px;
+}
+
+.card-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.meta-row {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.meta-row .val { color: var(--text2); }
+.meta-row .val.urgent { color: var(--danger); }
+
+/* PROGRESS BAR */
+.progress-bar {
+  height: 3px;
+  background: var(--surface);
+  border-radius: 2px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 2px;
+  transition: width 0.8s ease;
+}
+
+/* LEADERBOARD PANEL */
+.dashboard-bottom {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+.panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: 36px 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.leaderboard-row:last-child { border-bottom: none; }
+.leaderboard-row:hover { background: var(--bg3); }
+
+.rank-num {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1;
+}
+
+.rank-1 { color: var(--gold); }
+.rank-2 { color: var(--silver); }
+.rank-3 { color: var(--bronze); }
+.rank-other { color: var(--text3); font-size: 14px; }
+
+.player-info { display: flex; flex-direction: column; gap: 2px; }
+.player-name { font-weight: 500; font-size: 14px; }
+.player-address {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+}
+
+.player-wins {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text2);
+  text-align: right;
+}
+
+.player-earned {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--accent);
+  text-align: right;
+  letter-spacing: -0.3px;
+  min-width: 70px;
+}
+
+/* ACTIVITY FEED */
+.activity-item {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.activity-item:last-child { border-bottom: none; }
+
+.activity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.dot-win { background: var(--success); }
+.dot-join { background: var(--accent4); }
+.dot-create { background: var(--accent); }
+.dot-claim { background: var(--accent2); }
+
+.activity-text {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+.activity-text strong { color: var(--text); font-weight: 500; }
+.activity-text .amount { color: var(--accent); font-family: var(--font-mono); font-size: 12px; }
+
+.activity-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+/* ===== CHALLENGES PAGE ===== */
+.page-header {
+  padding: 48px 32px 32px;
+  max-width: 1300px;
+  margin: 0 auto;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  margin-bottom: 8px;
+}
+
+.page-sub {
+  font-size: 14px;
+  color: var(--text2);
+}
+
+.filters-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 32px 24px;
+  max-width: 1300px;
+  margin: 0 auto;
+  flex-wrap: wrap;
+}
+
+.filter-tabs {
+  display: flex;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  gap: 2px;
+}
+
+.filter-tab {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.filter-tab.active {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.filter-tab:hover:not(.active) { color: var(--text); }
+
+.sort-select {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  margin-left: auto;
+  appearance: none;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a96a8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.challenges-page-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 0 32px 40px;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+/* CREATE CHALLENGE BUTTON */
+.create-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #000;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  letter-spacing: -0.2px;
+  margin-left: auto;
+}
+
+.create-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(245,166,35,0.3);
+}
+
+/* ===== LEADERBOARD PAGE ===== */
+.leaderboard-page {
+  padding: 0 32px 40px;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+.lb-top3 {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr 1fr;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.lb-podium {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 20px 24px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.lb-podium:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+
+.lb-podium.first {
+  border-color: rgba(245,166,35,0.3);
+  background: linear-gradient(180deg, rgba(245,166,35,0.06) 0%, var(--bg2) 100%);
+}
+
+.lb-podium.second {
+  border-color: rgba(168,184,204,0.25);
+}
+
+.lb-podium.third {
+  border-color: rgba(205,127,74,0.25);
+}
+
+.podium-rank {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.podium-rank.rank-1 { color: var(--gold); }
+.podium-rank.rank-2 { color: var(--silver); }
+.podium-rank.rank-3 { color: var(--bronze); }
+
+.podium-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0 auto 10px;
+  border: 2px solid var(--border2);
+}
+
+.podium-avatar.av-1 { border-color: rgba(245,166,35,0.5); color: var(--gold); }
+.podium-avatar.av-2 { border-color: rgba(168,184,204,0.4); color: var(--silver); }
+.podium-avatar.av-3 { border-color: rgba(205,127,74,0.4); color: var(--bronze); }
+
+.podium-name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.podium-address {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  margin-bottom: 16px;
+}
+
+.podium-earned {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -1px;
+}
+
+.podium-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+}
+
+.lb-table {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.lb-table-header {
+  display: grid;
+  grid-template-columns: 48px 1fr 100px 100px 100px 80px;
+  gap: 0;
+  padding: 12px 20px;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+}
+
+.lb-th {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.lb-th:not(:first-child) { text-align: right; }
+
+.lb-row {
+  display: grid;
+  grid-template-columns: 48px 1fr 100px 100px 100px 80px;
+  gap: 0;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.lb-row:last-child { border-bottom: none; }
+.lb-row:hover { background: var(--bg3); }
+
+.lb-row.you {
+  background: rgba(245,166,35,0.04);
+  border-color: rgba(245,166,35,0.15);
+}
+
+.lb-rank {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--text3);
+}
+
+.lb-rank.top3 { font-size: 18px; }
+.lb-rank.top3.r1 { color: var(--gold); }
+.lb-rank.top3.r2 { color: var(--silver); }
+.lb-rank.top3.r3 { color: var(--bronze); }
+
+.lb-player { display: flex; align-items: center; gap: 10px; }
+
+.lb-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+
+.lb-name { font-weight: 500; font-size: 14px; }
+.lb-addr { font-family: var(--font-mono); font-size: 10px; color: var(--text3); }
+
+.lb-td {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text2);
+  text-align: right;
+}
+
+.lb-td.earned {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--accent);
+  letter-spacing: -0.3px;
+}
+
+/* ===== CREATE MODAL ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  width: 560px;
+  max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  transform: translateY(20px);
+  transition: transform 0.2s;
+  position: relative;
+}
+
+.modal-overlay.open .modal { transform: translateY(0); }
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  margin-bottom: 6px;
+}
+
+.modal-sub {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 28px;
+}
+
+.modal-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: var(--transition);
+}
+
+.modal-close:hover { color: var(--text); background: var(--surface2); }
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 11px 14px;
+  transition: var(--transition);
+  outline: none;
+  appearance: none;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(245,166,35,0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: var(--font-body);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.type-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.type-option {
+  padding: 10px 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.type-option.active {
+  border-color: var(--accent);
+  background: rgba(245,166,35,0.08);
+  color: var(--accent);
+}
+
+.type-icon {
+  font-size: 20px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.prize-input-wrapper {
+  position: relative;
+}
+
+.prize-input-wrapper .form-input {
+  padding-right: 50px;
+}
+
+.prize-suffix {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.fee-preview {
+  padding: 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.fee-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.fee-row.total {
+  border-top: 1px solid var(--border);
+  margin-top: 6px;
+  padding-top: 8px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.fee-row .fee-val {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #000;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  letter-spacing: -0.3px;
+  margin-top: 4px;
+}
+
+.submit-btn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(245,166,35,0.35);
+}
+
+/* CHALLENGE DETAIL MODAL */
+.challenge-detail {
+  width: 680px;
+}
+
+.detail-header {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.detail-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(245,166,35,0.2), rgba(255,107,53,0.1));
+  border: 1px solid rgba(245,166,35,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.detail-info { flex: 1; }
+.detail-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.7px;
+  margin-bottom: 6px;
+}
+
+.detail-prize-big {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -1.5px;
+  line-height: 1;
+}
+
+.detail-prize-big .ron-label {
+  font-size: 16px;
+  color: var(--text2);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.detail-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.detail-stat {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  text-align: center;
+}
+
+.detail-stat-val {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+}
+
+.detail-stat-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.detail-requirements {
+  margin-bottom: 20px;
+}
+
+.req-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.req-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.req-item:last-child { border-bottom: none; }
+.req-check { color: var(--success); font-weight: 700; }
+.req-x { color: var(--text3); }
+
+.join-btn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #000;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: var(--transition);
+  letter-spacing: -0.3px;
+}
+
+.join-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(245,166,35,0.4);
+}
+
+/* ===== PROFILE PAGE ===== */
+.profile-page {
+  padding: 0 32px 40px;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+.profile-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 32px;
+  padding: 28px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-header::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(ellipse 60% 80% at 80% 50%, rgba(245,166,35,0.04) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.profile-avatar-lg {
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 800;
+  color: #000;
+  flex-shrink: 0;
+}
+
+.profile-info { flex: 1; }
+
+.profile-name {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-bottom: 2px;
+}
+
+.profile-address {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text3);
+  margin-bottom: 12px;
+}
+
+.profile-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.achievement-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: rgba(245,166,35,0.1);
+  border: 1px solid rgba(245,166,35,0.2);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+}
+
+.profile-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.profile-stat-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+
+.psc-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.psc-val {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  line-height: 1;
+}
+
+.psc-val .unit {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+  letter-spacing: 0;
+  font-family: var(--font-body);
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.history-item:last-child { border-bottom: none; }
+
+.history-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-won { background: var(--success); }
+.status-active { background: var(--accent); animation: pulse-dot 2s infinite; }
+.status-lost { background: var(--text3); }
+
+.history-info { flex: 1; }
+.history-name { font-size: 13px; font-weight: 500; }
+.history-game { font-size: 11px; color: var(--text3); font-family: var(--font-mono); }
+
+.history-result {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  text-align: right;
+}
+
+.result-won { color: var(--success); }
+.result-active { color: var(--accent); }
+.result-lost { color: var(--text3); font-size: 12px; }
+
+/* RON EARN TRACKER */
+.earn-tracker {
+  padding: 20px;
+}
+
+.earn-title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.earn-big {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -2px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.earn-big .ron-sm {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text2);
+  letter-spacing: 0;
+}
+
+.earn-sub {
+  font-size: 12px;
+  color: var(--text2);
+  margin-bottom: 20px;
+}
+
+.earn-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  margin-bottom: 6px;
+}
+
+/* ===== NOTIFICATIONS ===== */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 300;
+  min-width: 280px;
+  max-width: 380px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transform: translateX(120%);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: var(--shadow);
+}
+
+.toast.show { transform: translateX(0); }
+.toast.success { border-color: rgba(0,212,170,0.3); }
+
+.toast-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.toast-text { font-size: 13px; line-height: 1.5; }
+.toast-text strong { color: var(--text); font-weight: 500; }
+.toast-text span { color: var(--text2); }
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in { animation: fadeInUp 0.4s ease both; }
+.fade-in-1 { animation-delay: 0.05s; }
+.fade-in-2 { animation-delay: 0.1s; }
+.fade-in-3 { animation-delay: 0.15s; }
+.fade-in-4 { animation-delay: 0.2s; }
+.fade-in-5 { animation-delay: 0.25s; }
+.fade-in-6 { animation-delay: 0.3s; }
+
+/* TICKER */
+.ticker-bar {
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  padding: 8px 0;
+}
+
+.ticker-inner {
+  display: flex;
+  gap: 48px;
+  animation: ticker 30s linear infinite;
+  white-space: nowrap;
+}
+
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.ticker-item .name { color: var(--text2); }
+.ticker-item .amount { color: var(--accent); }
+.ticker-item .sep {
+  color: var(--border2);
+  margin-left: 40px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .challenges-grid,
+  .challenges-page-grid { grid-template-columns: 1fr 1fr; }
+  .stats-bar { grid-template-columns: repeat(2,1fr); }
+  .lb-top3 { grid-template-columns: 1fr 1fr 1fr; }
+  .dashboard-bottom { grid-template-columns: 1fr; }
+  .profile-stats-grid { grid-template-columns: repeat(2,1fr); }
+  .profile-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  nav { padding: 0 16px; }
+  .nav-links { display: none; }
+  .challenges-grid,
+  .challenges-page-grid { grid-template-columns: 1fr; }
+  .hero, .page-header, .leaderboard-page, .profile-page { padding-left: 16px; padding-right: 16px; }
+  .filters-row { padding: 0 16px 16px; }
+  .challenges-page-grid { padding: 0 16px 32px; }
+  .lb-top3 { grid-template-columns: 1fr; }
+  .lb-table-header,
+  .lb-row { grid-template-columns: 40px 1fr 80px 80px; }
+  .lb-th:nth-child(3), .lb-td:nth-child(3),
+  .lb-th:nth-child(5), .lb-td:nth-child(5) { display: none; }
+}
+
+/* LIVE BADGE */
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--danger);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--danger);
+  animation: pulse-dot 1s ease-in-out infinite;
+}
+
+/* POD REWARD BANNER */
+.pod-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, rgba(0,212,170,0.07) 0%, rgba(0,109,255,0.05) 100%);
+  border: 1px solid rgba(0,212,170,0.15);
+  border-radius: var(--radius);
+  margin-bottom: 24px;
+  max-width: 1300px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pod-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.pod-text { flex: 1; }
+.pod-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 2px;
+  color: var(--accent3);
+}
+
+.pod-desc { font-size: 12px; color: var(--text2); }
+
+.pod-reward {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--accent3);
+  letter-spacing: -1px;
+  text-align: right;
+}
+
+.pod-reward-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 0.05em;
+  text-align: right;
+}
+
+/* EMPTY STATE */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text3);
+}
+
+.empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+.empty-state .empty-text { font-size: 14px; color: var(--text2); }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- TICKER -->
+<div class="ticker-bar">
+  <div class="ticker-inner" id="ticker"></div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#" onclick="showSection('dashboard')">
+    <div class="logo-mark">G</div>
+    GrindBoard
+  </a>
+  <ul class="nav-links">
+    <li><a href="#" onclick="showSection('dashboard')" id="nav-dashboard" class="active">Dashboard</a></li>
+    <li><a href="#" onclick="showSection('challenges')" id="nav-challenges">Challenges</a></li>
+    <li><a href="#" onclick="showSection('leaderboard')" id="nav-leaderboard">Leaderboard</a></li>
+    <li><a href="#" onclick="showSection('profile')" id="nav-profile">My Profile</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="wallet-btn" id="wallet-btn" onclick="toggleWallet()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="12" cy="14" r="2"/></svg>
+      Connect Wallet
+    </button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main>
+
+<!-- DASHBOARD -->
+<div class="section active" id="section-dashboard">
+  <div class="hero">
+    <div class="hero-bg"></div>
+    <div style="max-width:1300px;margin:0 auto">
+      <div class="hero-eyebrow">Ronin's Competitive Layer</div>
+      <h1>Grind. Compete.<br><span class="highlight">Earn RON.</span></h1>
+      <p class="hero-sub">The cross-game challenge protocol for Ronin. Complete quests, win prize pools, climb the leaderboard.</p>
+    </div>
+  </div>
+
+  <div style="padding:0 32px;max-width:1300px;margin:0 auto;">
+    <!-- POD BANNER -->
+    <div class="pod-banner fade-in">
+      <div class="pod-icon">⚡</div>
+      <div class="pod-text">
+        <div class="pod-title">Proof of Distribution Active</div>
+        <div class="pod-desc">GrindBoard earns RON rewards from Ronin network based on total gas generated &amp; user activity</div>
+      </div>
+      <div>
+        <div class="pod-reward">+8.4%</div>
+        <div class="pod-reward-label">est. builder APY</div>
+      </div>
+    </div>
+
+    <!-- STATS BAR -->
+    <div class="stats-bar fade-in fade-in-1">
+      <div class="stat-item">
+        <div class="stat-label">Total Prize Pool</div>
+        <div class="stat-value">4,820 <span class="unit">RON</span></div>
+        <div class="stat-change up">↑ 12.4% this week</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Active Challenges</div>
+        <div class="stat-value">34</div>
+        <div class="stat-change up">↑ 8 new today</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Total Players</div>
+        <div class="stat-value">1,247</div>
+        <div class="stat-change up">↑ 89 joined today</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">RON Distributed</div>
+        <div class="stat-value">28.4k <span class="unit">RON</span></div>
+        <div class="stat-change up">↑ all-time</div>
+      </div>
+    </div>
+
+    <!-- FEATURED CHALLENGES -->
+    <div class="section-header fade-in fade-in-2">
+      <div class="section-title">Featured Challenges <span class="count">//34 active</span></div>
+      <button class="view-all" onclick="showSection('challenges')">View all →</button>
+    </div>
+
+    <div class="challenges-grid fade-in fade-in-3" id="dashboard-challenges"></div>
+
+    <!-- BOTTOM PANELS -->
+    <div class="dashboard-bottom fade-in fade-in-4">
+      <!-- LEADERBOARD PANEL -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Top Grinders</div>
+          <div class="live-badge"><div class="live-dot"></div> Live</div>
+        </div>
+        <div id="mini-leaderboard"></div>
+      </div>
+
+      <!-- ACTIVITY FEED -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Live Activity</div>
+          <div class="live-badge"><div class="live-dot"></div> Live</div>
+        </div>
+        <div id="activity-feed"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CHALLENGES -->
+<div class="section" id="section-challenges">
+  <div class="page-header">
+    <div class="hero-eyebrow">34 active</div>
+    <div class="page-title">All Challenges</div>
+    <div class="page-sub">Find your grind. Create challenges. Earn RON.</div>
+  </div>
+  <div class="filters-row">
+    <div class="filter-tabs" id="game-tabs">
+      <button class="filter-tab active" data-filter="all">All Games</button>
+      <button class="filter-tab" data-filter="axie">Axie Infinity</button>
+      <button class="filter-tab" data-filter="pixels">Pixels</button>
+      <button class="filter-tab" data-filter="ragnarok">Ragnarok</button>
+    </div>
+    <div class="filter-tabs" id="type-tabs">
+      <button class="filter-tab active" data-type="all">All Types</button>
+      <button class="filter-tab" data-type="battle">Battle</button>
+      <button class="filter-tab" data-type="trade">Trade</button>
+      <button class="filter-tab" data-type="social">Social</button>
+      <button class="filter-tab" data-type="farm">Farm</button>
+    </div>
+    <select class="sort-select" id="sort-select">
+      <option value="prize">Highest Prize</option>
+      <option value="ending">Ending Soon</option>
+      <option value="players">Most Players</option>
+      <option value="new">Newest</option>
+    </select>
+    <button class="create-btn" onclick="openCreate()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Create Challenge
+    </button>
+  </div>
+  <div class="challenges-page-grid" id="page-challenges"></div>
+</div>
+
+<!-- LEADERBOARD -->
+<div class="section" id="section-leaderboard">
+  <div class="page-header">
+    <div class="hero-eyebrow">Season 1 · Week 3</div>
+    <div class="page-title">Leaderboard</div>
+    <div class="page-sub">Ranked by total RON earned from challenge wins</div>
+  </div>
+  <div class="leaderboard-page">
+    <div class="lb-top3" id="podium"></div>
+    <div class="panel lb-table">
+      <div class="lb-table-header">
+        <div class="lb-th">#</div>
+        <div class="lb-th" style="text-align:left">Player</div>
+        <div class="lb-th">Wins</div>
+        <div class="lb-th">Challenges</div>
+        <div class="lb-th">Win Rate</div>
+        <div class="lb-th">Earned</div>
+      </div>
+      <div id="lb-rows"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div class="section" id="section-profile">
+  <div class="page-header">
+    <div class="hero-eyebrow">Your account</div>
+    <div class="page-title">My Profile</div>
+    <div class="page-sub">Track your grind, earnings, and history</div>
+  </div>
+  <div class="profile-page">
+    <div class="profile-header fade-in">
+      <div class="profile-avatar-lg">GR</div>
+      <div class="profile-info">
+        <div class="profile-name">GrindMaster.ron</div>
+        <div class="profile-address">0x7f3a...4b2c · Ronin Wallet</div>
+        <div class="profile-badges">
+          <div class="achievement-badge">🏆 Season Winner</div>
+          <div class="achievement-badge">⚡ Early Grinder</div>
+          <div class="achievement-badge">🎯 10-Win Streak</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);margin-bottom:4px">GLOBAL RANK</div>
+        <div style="font-family:var(--font-display);font-size:40px;font-weight:800;color:var(--accent);letter-spacing:-2px;line-height:1">#12</div>
+      </div>
+    </div>
+
+    <div class="profile-stats-grid fade-in fade-in-1">
+      <div class="profile-stat-card">
+        <div class="psc-label">Total Earned</div>
+        <div class="psc-val" style="color:var(--accent)">142 <span class="unit">RON</span></div>
+      </div>
+      <div class="profile-stat-card">
+        <div class="psc-label">Challenges Won</div>
+        <div class="psc-val">18</div>
+      </div>
+      <div class="profile-stat-card">
+        <div class="psc-label">Win Rate</div>
+        <div class="psc-val" style="color:var(--accent3)">62<span class="unit">%</span></div>
+      </div>
+      <div class="profile-stat-card">
+        <div class="psc-label">Total Entered</div>
+        <div class="psc-val">29</div>
+      </div>
+    </div>
+
+    <div class="profile-grid fade-in fade-in-2">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Challenge History</div>
+        </div>
+        <div id="history-list"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">RON Earnings</div>
+        </div>
+        <div class="earn-tracker">
+          <div class="earn-title">Total Earned</div>
+          <div class="earn-big">142 <span class="ron-sm">RON</span></div>
+          <div class="earn-sub">≈ $89.60 at current prices</div>
+          <div class="earn-bar-label">
+            <span>This season progress</span>
+            <span>142 / 300 RON goal</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:47%"></div>
+          </div>
+          <div style="margin-top:20px;">
+            <div class="earn-title">Earnings by Game</div>
+            <div style="margin-top:10px;">
+              <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-bottom:6px;">
+                <span>⚔️ Axie Infinity</span>
+                <span style="font-family:var(--font-mono);color:var(--accent)">84 RON</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:59%"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-bottom:6px;margin-top:10px">
+                <span>🌾 Pixels</span>
+                <span style="font-family:var(--font-mono);color:var(--accent)">44 RON</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:31%"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-bottom:6px;margin-top:10px">
+                <span>⚡ Ragnarok</span>
+                <span style="font-family:var(--font-mono);color:var(--accent)">14 RON</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:10%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- CREATE MODAL -->
+<div class="modal-overlay" id="create-modal" onclick="handleModalClick(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeCreate()">×</button>
+    <div class="modal-title">Create Challenge</div>
+    <div class="modal-sub">Set a task, fund a prize pool, and watch players grind.</div>
+
+    <div class="form-group">
+      <div class="form-label">Challenge Title</div>
+      <input class="form-input" type="text" id="c-title" placeholder="e.g. Win 50 Axie battles this week">
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">Description</div>
+      <textarea class="form-textarea" id="c-desc" placeholder="Describe what players need to do to complete this challenge..."></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <div class="form-label">Game</div>
+        <select class="form-select" id="c-game">
+          <option value="">Select game...</option>
+          <option value="axie">Axie Infinity</option>
+          <option value="pixels">Pixels</option>
+          <option value="ragnarok">Ragnarok Landverse</option>
+          <option value="lumiterra">Lumiterra</option>
+          <option value="any">Any Ronin Game</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Duration</div>
+        <select class="form-select" id="c-duration">
+          <option value="1">24 hours</option>
+          <option value="3">3 days</option>
+          <option value="7" selected>7 days</option>
+          <option value="14">14 days</option>
+          <option value="30">30 days</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">Challenge Type</div>
+      <div class="type-grid">
+        <div class="type-option active" onclick="selectType(this,'battle')">
+          <span class="type-icon">⚔️</span>Battle
+        </div>
+        <div class="type-option" onclick="selectType(this,'trade')">
+          <span class="type-icon">💱</span>Trade
+        </div>
+        <div class="type-option" onclick="selectType(this,'social')">
+          <span class="type-icon">👥</span>Social
+        </div>
+        <div class="type-option" onclick="selectType(this,'farm')">
+          <span class="type-icon">🌾</span>Farm
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <div class="form-label">Prize Pool</div>
+        <div class="prize-input-wrapper">
+          <input class="form-input" type="number" id="c-prize" placeholder="50" min="1" oninput="updateFees()">
+          <span class="prize-suffix">RON</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Max Players</div>
+        <input class="form-input" type="number" id="c-maxplayers" placeholder="100" min="2">
+      </div>
+    </div>
+
+    <div class="fee-preview" id="fee-preview" style="display:none">
+      <div class="fee-row">
+        <span>Prize pool</span>
+        <span class="fee-val" id="fp-prize">— RON</span>
+      </div>
+      <div class="fee-row">
+        <span>GrindBoard fee (5%)</span>
+        <span class="fee-val" id="fp-fee">— RON</span>
+      </div>
+      <div class="fee-row total">
+        <span>You send</span>
+        <span class="fee-val" id="fp-total">— RON</span>
+      </div>
+    </div>
+
+    <button class="submit-btn" onclick="submitChallenge()" style="margin-top:20px">
+      🚀 Deploy Challenge
+    </button>
+  </div>
+</div>
+
+<!-- CHALLENGE DETAIL MODAL -->
+<div class="modal-overlay" id="detail-modal" onclick="handleDetailClick(event)">
+  <div class="modal challenge-detail" id="detail-content"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-icon" id="toast-icon">✅</div>
+  <div class="toast-text" id="toast-text"></div>
+</div>
+
+<script>
+const CHALLENGES = [
+  { id:1, title:"Axie PvP Domination Week", desc:"Win 50 ranked battles in Axie Infinity within 7 days. All Axie types accepted.", game:"Axie Infinity", gameKey:"axie", type:"battle", prize:200, players:87, maxPlayers:150, daysLeft:4, progress:58, hot:true, icon:"⚔️", tags:["battle"], color:"axie" },
+  { id:2, title:"Pixels Harvest Festival", desc:"Farm and sell 1,000 crops at the Pixels marketplace. Any crop type counts.", game:"Pixels", gameKey:"pixels", type:"farm", prize:120, players:203, maxPlayers:300, daysLeft:2, progress:67, hot:true, icon:"🌾", tags:["farm"], color:"pixels", ending:true },
+  { id:3, title:"Ronin NFT Trader Sprint", desc:"Complete 10 successful NFT trades on Mavis Market across any Ronin game.", game:"Any Ronin Game", gameKey:"any", type:"trade", prize:85, players:34, maxPlayers:100, daysLeft:6, progress:34, isNew:true, icon:"💎", tags:["trade"], color:"any" },
+  { id:4, title:"Ragnarok Guild Conquest", desc:"Lead your guild to victory in 5 guild battles in Ragnarok Landverse.", game:"Ragnarok", gameKey:"ragnarok", type:"battle", prize:350, players:12, maxPlayers:50, daysLeft:5, progress:24, icon:"🏰", tags:["battle"], color:"ragnarok" },
+  { id:5, title:"Pixels Social Butterfly", desc:"Recruit 20 new players to Pixels using your referral link this week.", game:"Pixels", gameKey:"pixels", type:"social", prize:60, players:156, maxPlayers:200, daysLeft:3, progress:78, icon:"🦋", tags:["social"] },
+  { id:6, title:"Axie Speed Grinder", desc:"Complete 100 Adventure mode stages in under 48 hours.", game:"Axie Infinity", gameKey:"axie", type:"battle", prize:95, players:67, maxPlayers:100, daysLeft:1, progress:67, ending:true, icon:"⚡", tags:["battle"] },
+  { id:7, title:"RON DeFi Challenge", desc:"Provide liquidity on Katana DEX and maintain position for 7 days.", game:"Ronin DeFi", gameKey:"any", type:"trade", prize:180, players:28, maxPlayers:80, daysLeft:7, progress:35, isNew:true, icon:"🔄", tags:["trade"] },
+  { id:8, title:"Lumiterra Boss Rush", desc:"Defeat 10 world bosses in Lumiterra within the week.", game:"Lumiterra", gameKey:"lumiterra", type:"battle", prize:140, players:45, maxPlayers:120, daysLeft:6, progress:37, icon:"👹", tags:["battle"] },
+  { id:9, title:"Pixels Land Builder", desc:"Construct 5 new buildings on your Pixels land plot this season.", game:"Pixels", gameKey:"pixels", type:"farm", prize:75, players:89, maxPlayers:150, daysLeft:8, progress:59, icon:"🏗️", tags:["farm"] },
+];
+
+const PLAYERS = [
+  { rank:1, name:"SkyMavisKing", addr:"0x1a2b...3c4d", wins:34, challenges:41, winRate:82, earned:847, av:"SK" },
+  { rank:2, name:"AxieGod.ron", addr:"0x9f8e...7d6c", wins:28, challenges:35, winRate:80, earned:621, av:"AG" },
+  { rank:3, name:"PixelFarmer", addr:"0x2b3c...4d5e", wins:22, challenges:30, winRate:73, earned:512, av:"PF" },
+  { rank:4, name:"RoninWhale", addr:"0x5a6b...7c8d", wins:19, challenges:28, winRate:67, earned:394, av:"RW" },
+  { rank:5, name:"GrindMaster.ron", addr:"0x7f3a...4b2c", wins:18, challenges:29, winRate:62, earned:142, av:"GR", isYou:true },
+  { rank:6, name:"DeFiQueen", addr:"0x3e4f...5a6b", wins:16, challenges:25, winRate:64, earned:318, av:"DQ" },
+  { rank:7, name:"BattleAxie", addr:"0x8c9d...0e1f", wins:14, challenges:22, winRate:63, earned:276, av:"BA" },
+  { rank:8, name:"LumiHunter", addr:"0x4d5e...6f7a", wins:12, challenges:20, winRate:60, earned:241, av:"LH" },
+  { rank:9, name:"RagnarokLord", addr:"0x6b7c...8d9e", wins:11, challenges:19, winRate:57, earned:198, av:"RL" },
+  { rank:10, name:"NFTCollector", addr:"0x0f1a...2b3c", wins:10, challenges:18, winRate:55, earned:176, av:"NC" },
+];
+
+const ACTIVITY = [
+  { type:"win", text:"<strong>SkyMavisKing</strong> won the Axie PvP Domination Week challenge", amount:"+200 RON", time:"2m ago" },
+  { type:"join", text:"<strong>PixelFarmer</strong> joined Pixels Harvest Festival", amount:"", time:"5m ago" },
+  { type:"create", text:"<strong>RoninWhale</strong> created a new challenge: RON DeFi Challenge", amount:"180 RON prize", time:"12m ago" },
+  { type:"claim", text:"<strong>DeFiQueen</strong> claimed prize from Ragnarok Guild Conquest", amount:"+350 RON", time:"18m ago" },
+  { type:"join", text:"<strong>BattleAxie</strong> joined Axie Speed Grinder", amount:"", time:"24m ago" },
+  { type:"win", text:"<strong>LumiHunter</strong> completed Pixels Social Butterfly", amount:"+60 RON", time:"31m ago" },
+  { type:"create", text:"<strong>0x4d2a...8f</strong> created Lumiterra Boss Rush", amount:"140 RON prize", time:"45m ago" },
+];
+
+const HISTORY = [
+  { name:"Axie PvP Domination Week", game:"Axie Infinity", status:"active", result:"In Progress", earned:0 },
+  { name:"Pixels Harvest Festival (S1)", game:"Pixels", status:"won", result:"+120 RON", earned:120 },
+  { name:"RON NFT Trader Sprint", game:"Any Ronin", status:"won", result:"+85 RON", earned:85 },
+  { name:"Ragnarok Conquest", game:"Ragnarok", status:"lost", result:"Top 15%", earned:0 },
+  { name:"Axie Speed Run Challenge", game:"Axie Infinity", status:"won", result:"+95 RON", earned:95 },
+  { name:"Pixels Social Week", game:"Pixels", status:"lost", result:"Top 30%", earned:0 },
+];
+
+const TICKER_ITEMS = [
+  "SkyMavisKing won +200 RON", "AxieGod.ron joined Axie PvP", "New challenge: RON DeFi Challenge • 180 RON",
+  "PixelFarmer won +120 RON", "34 active challenges", "1,247 players competing", "RoninWhale created Ragnarok Guild Conquest",
+  "DeFiQueen claimed +350 RON", "Season 1 Week 3 underway", "GrindBoard PoD score: 8.4% APY",
+];
+
+let walletConnected = false;
+let activeGameFilter = 'all';
+let activeTypeFilter = 'all';
+
+// INIT
+function init() {
+  buildTicker();
+  buildDashboardChallenges();
+  buildMiniLeaderboard();
+  buildActivityFeed();
+  buildAllChallenges();
+  buildLeaderboard();
+  buildHistory();
+}
+
+function buildTicker() {
+  const t = document.getElementById('ticker');
+  const items = [...TICKER_ITEMS, ...TICKER_ITEMS];
+  t.innerHTML = items.map(i =>
+    `<span class="ticker-item">
+      <span class="live-dot" style="width:5px;height:5px;border-radius:50%;background:var(--accent);display:inline-block;flex-shrink:0"></span>
+      <span class="name">${i}</span>
+      <span class="sep">◆</span>
+    </span>`
+  ).join('');
+}
+
+function challengeCard(c, compact) {
+  const typeClass = { battle:'badge-battle', trade:'badge-trade', social:'badge-social', farm:'badge-farm' }[c.type] || 'badge-battle';
+  const typeLabel = { battle:'Battle', trade:'Trade', social:'Social', farm:'Farm' }[c.type] || 'Battle';
+  let cardClass = 'challenge-card';
+  if (c.hot) cardClass += ' hot';
+  if (c.isNew) cardClass += ' new';
+  if (c.ending) cardClass += ' ending';
+
+  return `<div class="${cardClass}" onclick="openDetail(${c.id})">
+    <div class="card-badges">
+      <span class="badge badge-game">${c.game}</span>
+      <span class="badge ${typeClass}">${typeLabel}</span>
+      ${c.hot ? '<span class="badge badge-hot">🔥 Hot</span>' : ''}
+      ${c.isNew ? '<span class="badge badge-new">✨ New</span>' : ''}
+      ${c.ending ? '<span class="badge badge-ending">⏱ Ending Soon</span>' : ''}
+    </div>
+    <div class="card-title">${c.icon} ${c.title}</div>
+    <div class="card-desc">${c.desc}</div>
+    <div class="progress-bar">
+      <div class="progress-fill" style="width:${c.progress}%"></div>
+    </div>
+    <div class="card-footer">
+      <div class="card-prize">
+        <div class="prize-label">Prize Pool</div>
+        <div class="prize-amount">${c.prize} <span class="ron">RON</span></div>
+      </div>
+      <div class="card-meta">
+        <div class="meta-row">👥 <span class="val">${c.players}/${c.maxPlayers}</span></div>
+        <div class="meta-row">⏳ <span class="val ${c.daysLeft <= 2 ? 'urgent' : ''}">${c.daysLeft}d left</span></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildDashboardChallenges() {
+  const el = document.getElementById('dashboard-challenges');
+  el.innerHTML = CHALLENGES.slice(0,6).map(c => challengeCard(c)).join('');
+}
+
+function buildAllChallenges() {
+  const el = document.getElementById('page-challenges');
+  let filtered = CHALLENGES.filter(c => {
+    const gOk = activeGameFilter === 'all' || c.gameKey === activeGameFilter;
+    const tOk = activeTypeFilter === 'all' || c.type === activeTypeFilter;
+    return gOk && tOk;
+  });
+  const sortVal = document.getElementById('sort-select')?.value || 'prize';
+  if (sortVal === 'prize') filtered.sort((a,b) => b.prize - a.prize);
+  else if (sortVal === 'ending') filtered.sort((a,b) => a.daysLeft - b.daysLeft);
+  else if (sortVal === 'players') filtered.sort((a,b) => b.players - a.players);
+  else filtered.sort((a,b) => b.id - a.id);
+  el.innerHTML = filtered.length ? filtered.map(c => challengeCard(c)).join('') : `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-text">No challenges match this filter.</div></div>`;
+}
+
+function buildMiniLeaderboard() {
+  const el = document.getElementById('mini-leaderboard');
+  el.innerHTML = PLAYERS.slice(0,7).map(p => {
+    const rankClass = p.rank <= 3 ? `rank-${p.rank}` : 'rank-other';
+    return `<div class="leaderboard-row" onclick="showSection('leaderboard')">
+      <div class="rank-num ${rankClass}">${p.rank <= 3 ? ['🥇','🥈','🥉'][p.rank-1] : p.rank}</div>
+      <div class="player-info">
+        <div class="player-name">${p.isYou ? '⭐ ' : ''}${p.name}</div>
+        <div class="player-address">${p.addr}</div>
+      </div>
+      <div class="player-wins">${p.wins} wins</div>
+      <div class="player-earned">${p.earned} <span style="font-size:10px;font-family:var(--font-mono);color:var(--text3)">RON</span></div>
+    </div>`;
+  }).join('');
+}
+
+function buildActivityFeed() {
+  const dotClass = { win:'dot-win', join:'dot-join', create:'dot-create', claim:'dot-claim' };
+  const el = document.getElementById('activity-feed');
+  el.innerHTML = ACTIVITY.map(a => `
+    <div class="activity-item">
+      <div class="activity-dot ${dotClass[a.type] || 'dot-join'}"></div>
+      <div>
+        <div class="activity-text">${a.text} ${a.amount ? `<span class="amount">${a.amount}</span>` : ''}</div>
+        <div class="activity-time">${a.time}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function buildLeaderboard() {
+  const podium = document.getElementById('podium');
+  const top3 = PLAYERS.slice(0,3);
+  const order = [top3[1], top3[0], top3[2]];
+  const classes = ['second','first','third'];
+  const rankClasses = ['rank-2','rank-1','rank-3'];
+  const rankNums = ['2','1','3'];
+  const avClasses = ['av-2','av-1','av-3'];
+  podium.innerHTML = order.map((p,i) => `
+    <div class="lb-podium ${classes[i]}" onclick="showSection('profile')">
+      <div class="podium-rank ${rankClasses[i]}">#${rankNums[i]}</div>
+      <div class="podium-avatar ${avClasses[i]}">${p.av}</div>
+      <div class="podium-name">${p.name}</div>
+      <div class="podium-address">${p.addr}</div>
+      <div class="podium-earned">${p.earned} RON</div>
+      <div class="podium-sub">${p.wins} wins · ${p.winRate}% rate</div>
+    </div>
+  `).join('');
+
+  const rows = document.getElementById('lb-rows');
+  rows.innerHTML = PLAYERS.map(p => {
+    let rankClass = 'lb-rank';
+    let rankExtra = '';
+    if (p.rank <= 3) { rankClass += ' top3'; rankExtra = ` r${p.rank}`; }
+    const rankDisp = p.rank <= 3 ? ['🥇','🥈','🥉'][p.rank-1] : `#${p.rank}`;
+    return `<div class="lb-row ${p.isYou ? 'you' : ''}" onclick="showSection('profile')">
+      <div class="${rankClass}${rankExtra}">${rankDisp}</div>
+      <div class="lb-player">
+        <div class="lb-avatar">${p.av}</div>
+        <div>
+          <div class="lb-name">${p.isYou ? '⭐ ' : ''}${p.name}</div>
+          <div class="lb-addr">${p.addr}</div>
+        </div>
+      </div>
+      <div class="lb-td">${p.wins}</div>
+      <div class="lb-td">${p.challenges}</div>
+      <div class="lb-td">${p.winRate}%</div>
+      <div class="lb-td earned">${p.earned}</div>
+    </div>`;
+  }).join('');
+}
+
+function buildHistory() {
+  const el = document.getElementById('history-list');
+  el.innerHTML = HISTORY.map(h => `
+    <div class="history-item">
+      <div class="history-status status-${h.status}"></div>
+      <div class="history-info">
+        <div class="history-name">${h.name}</div>
+        <div class="history-game">${h.game}</div>
+      </div>
+      <div class="history-result result-${h.status}">${h.result}</div>
+    </div>
+  `).join('');
+}
+
+// NAV
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  window.scrollTo(0,0);
+  if (name === 'challenges') buildAllChallenges();
+  return false;
+}
+
+// WALLET
+function toggleWallet() {
+  walletConnected = !walletConnected;
+  const btn = document.getElementById('wallet-btn');
+  if (walletConnected) {
+    btn.innerHTML = '<div class="wallet-dot"></div> 0x7f3a...4b2c';
+    btn.classList.add('connected');
+    showToast('✅','<strong>Wallet connected</strong><br><span>0x7f3a...4b2c · Ronin Wallet</span>','success');
+  } else {
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="12" cy="14" r="2"/></svg> Connect Wallet`;
+    btn.classList.remove('connected');
+  }
+}
+
+// FILTERS
+document.addEventListener('click', function(e) {
+  if (e.target.matches('#game-tabs .filter-tab')) {
+    document.querySelectorAll('#game-tabs .filter-tab').forEach(t => t.classList.remove('active'));
+    e.target.classList.add('active');
+    activeGameFilter = e.target.dataset.filter;
+    buildAllChallenges();
+  }
+  if (e.target.matches('#type-tabs .filter-tab')) {
+    document.querySelectorAll('#type-tabs .filter-tab').forEach(t => t.classList.remove('active'));
+    e.target.classList.add('active');
+    activeTypeFilter = e.target.dataset.type;
+    buildAllChallenges();
+  }
+});
+
+document.addEventListener('change', function(e) {
+  if (e.target.id === 'sort-select') buildAllChallenges();
+});
+
+// CREATE MODAL
+function openCreate() {
+  document.getElementById('create-modal').classList.add('open');
+}
+
+function closeCreate() {
+  document.getElementById('create-modal').classList.remove('open');
+}
+
+function handleModalClick(e) {
+  if (e.target === document.getElementById('create-modal')) closeCreate();
+}
+
+function selectType(el, type) {
+  document.querySelectorAll('.type-option').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function updateFees() {
+  const prize = parseFloat(document.getElementById('c-prize').value) || 0;
+  const preview = document.getElementById('fee-preview');
+  if (prize > 0) {
+    preview.style.display = 'block';
+    const fee = prize * 0.05;
+    document.getElementById('fp-prize').textContent = prize.toFixed(2) + ' RON';
+    document.getElementById('fp-fee').textContent = fee.toFixed(2) + ' RON';
+    document.getElementById('fp-total').textContent = (prize + fee).toFixed(2) + ' RON';
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+function submitChallenge() {
+  const title = document.getElementById('c-title').value.trim();
+  const prize = document.getElementById('c-prize').value;
+  const game = document.getElementById('c-game').value;
+  if (!title || !prize || !game) {
+    showToast('⚠️','<strong>Missing fields</strong><br><span>Please fill in all required fields.</span>');
+    return;
+  }
+  if (!walletConnected) {
+    showToast('🔗','<strong>Connect your wallet first</strong><br><span>Click Connect Wallet to proceed.</span>');
+    return;
+  }
+  closeCreate();
+  showToast('🚀','<strong>Challenge deployed!</strong><br><span>Your challenge is now live on Ronin.</span>','success');
+}
+
+// DETAIL MODAL
+function openDetail(id) {
+  const c = CHALLENGES.find(ch => ch.id === id);
+  if (!c) return;
+  const modal = document.getElementById('detail-modal');
+  const content = document.getElementById('detail-content');
+
+  content.innerHTML = `
+    <button class="modal-close" onclick="document.getElementById('detail-modal').classList.remove('open')">×</button>
+    <div class="detail-header">
+      <div class="detail-icon">${c.icon}</div>
+      <div class="detail-info">
+        <div class="card-badges" style="margin-bottom:8px">
+          <span class="badge badge-game">${c.game}</span>
+          ${c.hot ? '<span class="badge badge-hot">🔥 Hot</span>' : ''}
+          ${c.ending ? '<span class="badge badge-ending">⏱ Ending Soon</span>' : ''}
+        </div>
+        <div class="detail-title">${c.title}</div>
+      </div>
+      <div>
+        <div class="detail-prize-big">${c.prize} <span class="ron-label">RON</span></div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">PRIZE POOL</div>
+      </div>
+    </div>
+    <div class="detail-stats-row">
+      <div class="detail-stat">
+        <div class="detail-stat-val">${c.players}</div>
+        <div class="detail-stat-label">Players joined</div>
+      </div>
+      <div class="detail-stat">
+        <div class="detail-stat-val" style="color:${c.daysLeft <= 2 ? 'var(--danger)' : 'var(--text)'}">${c.daysLeft}d</div>
+        <div class="detail-stat-label">Time remaining</div>
+      </div>
+      <div class="detail-stat">
+        <div class="detail-stat-val">${c.maxPlayers - c.players}</div>
+        <div class="detail-stat-label">Spots left</div>
+      </div>
+    </div>
+    <div class="detail-requirements">
+      <div class="req-title">Requirements</div>
+      <div class="req-item"><span class="req-check">✓</span> Active ${c.game} account</div>
+      <div class="req-item"><span class="req-check">✓</span> Ronin Wallet connected</div>
+      <div class="req-item"><span class="req-x">○</span> Complete: ${c.desc}</div>
+      <div class="req-item"><span class="req-x">○</span> Submit proof before deadline</div>
+    </div>
+    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px">Progress to capacity</div>
+    <div class="progress-bar" style="height:5px;margin-bottom:20px">
+      <div class="progress-fill" style="width:${c.progress}%"></div>
+    </div>
+    <button class="join-btn" onclick="joinChallenge(${c.id})">
+      ${walletConnected ? '⚡ Join Challenge — Free Entry' : '🔗 Connect Wallet to Join'}
+    </button>
+  `;
+  modal.classList.add('open');
+}
+
+function handleDetailClick(e) {
+  if (e.target === document.getElementById('detail-modal')) {
+    document.getElementById('detail-modal').classList.remove('open');
+  }
+}
+
+function joinChallenge(id) {
+  if (!walletConnected) {
+    document.getElementById('detail-modal').classList.remove('open');
+    showToast('🔗','<strong>Connect your wallet first</strong><br><span>You need a Ronin Wallet to join.</span>');
+    return;
+  }
+  document.getElementById('detail-modal').classList.remove('open');
+  showToast('⚡','<strong>Challenge joined!</strong><br><span>Good luck, grinder. Track progress in your profile.</span>','success');
+}
+
+// TOAST
+function showToast(icon, text, type) {
+  const toast = document.getElementById('toast');
+  document.getElementById('toast-icon').innerHTML = icon;
+  document.getElementById('toast-text').innerHTML = text;
+  toast.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(() => { toast.classList.remove('show'); }, 3500);
+}
+
+// Simulate live activity updates
+function simulateActivity() {
+  const newActivities = [
+    { type:"win", text:"<strong>RoninWhale</strong> won Ragnarok Guild Conquest", amount:"+350 RON", time:"just now" },
+    { type:"join", text:"<strong>0x8f2c...7b</strong> joined Pixels Harvest Festival", amount:"", time:"just now" },
+    { type:"create", text:"<strong>AxieGod.ron</strong> created a new challenge", amount:"500 RON prize", time:"just now" },
+    { type:"claim", text:"<strong>DeFiQueen</strong> claimed her weekly earnings", amount:"+142 RON", time:"just now" },
+  ];
+  setInterval(() => {
+    const a = newActivities[Math.floor(Math.random() * newActivities.length)];
+    ACTIVITY.unshift({ ...a });
+    if (ACTIVITY.length > 8) ACTIVITY.pop();
+    if (document.getElementById('section-dashboard').classList.contains('active')) {
+      buildActivityFeed();
+    }
+  }, 8000);
+}
+
+init();
+simulateActivity();
+</script>
+</body>
+</html>
