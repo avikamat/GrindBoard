@@ -2210,9 +2210,10 @@ async function init() {
   buildTicker();
 
   // Auto-reconnect if wallet was connected before
-  if (window.ethereum) {
+  const _rp = window.ronin?.provider;
+  if (_rp) {
     try {
-      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      const accounts = await _rp.request({ method: 'eth_accounts' });
       if (accounts.length) await _setupWallet(accounts[0]);
     } catch (_) {}
   }
@@ -2243,14 +2244,18 @@ async function toggleWallet() {
     btn.classList.remove('connected');
     return;
   }
-
-  if (!window.ethereum) {
-    showToast('❌', '<strong>No wallet detected</strong><br><span>Install Ronin Wallet extension first.</span>');
+ 
+  // ── Ronin Wallet injects at window.ronin.provider, NOT window.ethereum.
+  // MetaMask / Magic Eden hijack window.ethereum, so we target Ronin directly.
+  const roninProvider = window.ronin?.provider;
+ 
+  if (!roninProvider) {
+    showToast('❌', '<strong>Ronin Wallet not detected</strong><br><span>Make sure the Ronin Wallet extension is installed and enabled for this site.</span>');
     return;
   }
 
-  try {
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+ try {
+    const accounts = await roninProvider.request({ method: 'eth_requestAccounts' });
     if (!accounts.length) return;
 
     // Ensure correct network
