@@ -2258,14 +2258,14 @@ async function toggleWallet() {
     const accounts = await roninProvider.request({ method: 'eth_requestAccounts' });
     if (!accounts.length) return;
 
-    // Ensure correct network
-    const hexChain = await window.ethereum.request({ method: 'eth_chainId' });
+   // Ensure correct network
+    const hexChain = await roninProvider.request({ method: 'eth_chainId' });
     if (parseInt(hexChain, 16) !== CHAIN_ID) {
       try {
-        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_HEX }] });
+        await roninProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_HEX }] });
       } catch (sw) {
         if (sw.code === 4902) {
-          await window.ethereum.request({
+          await roninProvider.request({
             method: 'wallet_addEthereumChain',
             params: [{
               chainId: CHAIN_HEX,
@@ -2278,10 +2278,10 @@ async function toggleWallet() {
         } else throw sw;
       }
     }
-
+ 
     await _setupWallet(accounts[0]);
     showToast('✅', `<strong>Wallet connected</strong><br><span>${shortAddr(accounts[0])} · Ronin Wallet</span>`, 'success');
-
+ 
     if (document.getElementById('section-profile').classList.contains('active')) {
       await loadProfile();
     }
@@ -2289,14 +2289,14 @@ async function toggleWallet() {
     showToast('❌', `<strong>Connection failed</strong><br><span>${(e.message || '').slice(0, 70)}</span>`);
   }
 }
-
+ 
 async function _setupWallet(address) {
   walletAddress   = address;
   walletConnected = true;
-  writeProvider   = new ethers.BrowserProvider(window.ethereum);
+  writeProvider   = new ethers.BrowserProvider(window.ronin.provider);
   writeSigner     = await writeProvider.getSigner();
   writeContract   = new ethers.Contract(CONTRACT_ADDRESS, ABI, writeSigner);
-
+ 
   const btn = document.getElementById('wallet-btn');
   btn.innerHTML = `<div class="wallet-dot"></div> ${shortAddr(address)}`;
   btn.classList.add('connected');
