@@ -2078,112 +2078,435 @@ h1 .highlight {
   <div class="toast-text" id="toast-text"></div>
 </div>
 
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 <script>
-const CHALLENGES = [
-  { id:1, title:"Axie PvP Domination Week", desc:"Win 50 ranked battles in Axie Infinity within 7 days. All Axie types accepted.", game:"Axie Infinity", gameKey:"axie", type:"battle", prize:200, players:87, maxPlayers:150, daysLeft:4, progress:58, hot:true, icon:"⚔️", tags:["battle"], color:"axie" },
-  { id:2, title:"Pixels Harvest Festival", desc:"Farm and sell 1,000 crops at the Pixels marketplace. Any crop type counts.", game:"Pixels", gameKey:"pixels", type:"farm", prize:120, players:203, maxPlayers:300, daysLeft:2, progress:67, hot:true, icon:"🌾", tags:["farm"], color:"pixels", ending:true },
-  { id:3, title:"Ronin NFT Trader Sprint", desc:"Complete 10 successful NFT trades on Mavis Market across any Ronin game.", game:"Any Ronin Game", gameKey:"any", type:"trade", prize:85, players:34, maxPlayers:100, daysLeft:6, progress:34, isNew:true, icon:"💎", tags:["trade"], color:"any" },
-  { id:4, title:"Ragnarok Guild Conquest", desc:"Lead your guild to victory in 5 guild battles in Ragnarok Landverse.", game:"Ragnarok", gameKey:"ragnarok", type:"battle", prize:350, players:12, maxPlayers:50, daysLeft:5, progress:24, icon:"🏰", tags:["battle"], color:"ragnarok" },
-  { id:5, title:"Pixels Social Butterfly", desc:"Recruit 20 new players to Pixels using your referral link this week.", game:"Pixels", gameKey:"pixels", type:"social", prize:60, players:156, maxPlayers:200, daysLeft:3, progress:78, icon:"🦋", tags:["social"] },
-  { id:6, title:"Axie Speed Grinder", desc:"Complete 100 Adventure mode stages in under 48 hours.", game:"Axie Infinity", gameKey:"axie", type:"battle", prize:95, players:67, maxPlayers:100, daysLeft:1, progress:67, ending:true, icon:"⚡", tags:["battle"] },
-  { id:7, title:"RON DeFi Challenge", desc:"Provide liquidity on Katana DEX and maintain position for 7 days.", game:"Ronin DeFi", gameKey:"any", type:"trade", prize:180, players:28, maxPlayers:80, daysLeft:7, progress:35, isNew:true, icon:"🔄", tags:["trade"] },
-  { id:8, title:"Lumiterra Boss Rush", desc:"Defeat 10 world bosses in Lumiterra within the week.", game:"Lumiterra", gameKey:"lumiterra", type:"battle", prize:140, players:45, maxPlayers:120, daysLeft:6, progress:37, icon:"👹", tags:["battle"] },
-  { id:9, title:"Pixels Land Builder", desc:"Construct 5 new buildings on your Pixels land plot this season.", game:"Pixels", gameKey:"pixels", type:"farm", prize:75, players:89, maxPlayers:150, daysLeft:8, progress:59, icon:"🏗️", tags:["farm"] },
+// ════════════════════════════════════════════════════════════════════════
+//  GRINDBOARD — LIVE CONTRACT INTEGRATION
+//  Contract : 0xbb00fAf5e1C7ca6231F15b7A7eb089793072c0cD
+//  Network  : Ronin Saigon Testnet (chainId 2021)
+// ════════════════════════════════════════════════════════════════════════
+
+const CONTRACT_ADDRESS = '0xbb00fAf5e1C7ca6231F15b7A7eb089793072c0cD';
+const CHAIN_ID         = 2021;
+const CHAIN_HEX        = '0x7E5';
+const RPC_URL          = 'https://saigon-testnet.roninchain.com/rpc';
+
+// ── Minimal ABI derived directly from GrindBoard.sol
+const ABI = [
+  // writes
+  'function createChallenge(string,string,string,uint8,uint8,uint8,uint256,uint256,uint256,uint256,uint256) payable returns (uint256)',
+  'function register(uint256) payable',
+  'function claimPrize(uint256)',
+  'function topUp(uint256) payable',
+  'function cancelByCreator(uint256)',
+  // reads
+  'function getChallenge(uint256) view returns (tuple(uint256 id,address creator,string title,string description,string verifyUrl,uint8 game,uint8 cType,uint8 splitMode,uint256 prizePool,uint256 feeCharged,uint256 entryFee,uint256 startTime,uint256 endTime,uint256 createdAt,uint256 settledAt,uint256 maxPlayers,uint256 playerCount,uint256 topN,uint8 status,bool regOpen))',
+  'function getChallengeIds(uint256,uint256) view returns (uint256[])',
+  'function getProtocolStats() view returns (uint256,uint256,uint256,uint256)',
+  'function getPlayerStats(address) view returns (uint256,uint256,uint256,uint256)',
+  'function challengeCount() view returns (uint256)',
+  'function claimable(uint256,address) view returns (uint256)',
+  'function registered(uint256,address) view returns (bool)',
+  // events
+  'event ChallengeCreated(uint256 indexed id,address indexed creator,string title,uint8 game,uint8 cType,uint8 splitMode,uint256 prizePool,uint256 endTime)',
+  'event PlayerJoined(uint256 indexed id,address indexed player,uint256 newCount)',
+  'event ChallengeSettled(uint256 indexed id,uint256 totalPaid,uint256 winnerCount)',
+  'event PrizeClaimed(uint256 indexed id,address indexed player,uint256 amount)',
 ];
 
-const PLAYERS = [
-  { rank:1, name:"SkyMavisKing", addr:"0x1a2b...3c4d", wins:34, challenges:41, winRate:82, earned:847, av:"SK" },
-  { rank:2, name:"AxieGod.ron", addr:"0x9f8e...7d6c", wins:28, challenges:35, winRate:80, earned:621, av:"AG" },
-  { rank:3, name:"PixelFarmer", addr:"0x2b3c...4d5e", wins:22, challenges:30, winRate:73, earned:512, av:"PF" },
-  { rank:4, name:"RoninWhale", addr:"0x5a6b...7c8d", wins:19, challenges:28, winRate:67, earned:394, av:"RW" },
-  { rank:5, name:"GrindMaster.ron", addr:"0x7f3a...4b2c", wins:18, challenges:29, winRate:62, earned:142, av:"GR", isYou:true },
-  { rank:6, name:"DeFiQueen", addr:"0x3e4f...5a6b", wins:16, challenges:25, winRate:64, earned:318, av:"DQ" },
-  { rank:7, name:"BattleAxie", addr:"0x8c9d...0e1f", wins:14, challenges:22, winRate:63, earned:276, av:"BA" },
-  { rank:8, name:"LumiHunter", addr:"0x4d5e...6f7a", wins:12, challenges:20, winRate:60, earned:241, av:"LH" },
-  { rank:9, name:"RagnarokLord", addr:"0x6b7c...8d9e", wins:11, challenges:19, winRate:57, earned:198, av:"RL" },
-  { rank:10, name:"NFTCollector", addr:"0x0f1a...2b3c", wins:10, challenges:18, winRate:55, earned:176, av:"NC" },
-];
-
-const ACTIVITY = [
-  { type:"win", text:"<strong>SkyMavisKing</strong> won the Axie PvP Domination Week challenge", amount:"+200 RON", time:"2m ago" },
-  { type:"join", text:"<strong>PixelFarmer</strong> joined Pixels Harvest Festival", amount:"", time:"5m ago" },
-  { type:"create", text:"<strong>RoninWhale</strong> created a new challenge: RON DeFi Challenge", amount:"180 RON prize", time:"12m ago" },
-  { type:"claim", text:"<strong>DeFiQueen</strong> claimed prize from Ragnarok Guild Conquest", amount:"+350 RON", time:"18m ago" },
-  { type:"join", text:"<strong>BattleAxie</strong> joined Axie Speed Grinder", amount:"", time:"24m ago" },
-  { type:"win", text:"<strong>LumiHunter</strong> completed Pixels Social Butterfly", amount:"+60 RON", time:"31m ago" },
-  { type:"create", text:"<strong>0x4d2a...8f</strong> created Lumiterra Boss Rush", amount:"140 RON prize", time:"45m ago" },
-];
-
-const HISTORY = [
-  { name:"Axie PvP Domination Week", game:"Axie Infinity", status:"active", result:"In Progress", earned:0 },
-  { name:"Pixels Harvest Festival (S1)", game:"Pixels", status:"won", result:"+120 RON", earned:120 },
-  { name:"RON NFT Trader Sprint", game:"Any Ronin", status:"won", result:"+85 RON", earned:85 },
-  { name:"Ragnarok Conquest", game:"Ragnarok", status:"lost", result:"Top 15%", earned:0 },
-  { name:"Axie Speed Run Challenge", game:"Axie Infinity", status:"won", result:"+95 RON", earned:95 },
-  { name:"Pixels Social Week", game:"Pixels", status:"lost", result:"Top 30%", earned:0 },
-];
-
-const TICKER_ITEMS = [
-  "SkyMavisKing won +200 RON", "AxieGod.ron joined Axie PvP", "New challenge: RON DeFi Challenge • 180 RON",
-  "PixelFarmer won +120 RON", "34 active challenges", "1,247 players competing", "RoninWhale created Ragnarok Guild Conquest",
-  "DeFiQueen claimed +350 RON", "Season 1 Week 3 underway", "GrindBoard PoD score: 8.4% APY",
-];
-
-let walletConnected = false;
+// ── Runtime state
+let readProvider, readContract;
+let writeProvider, writeSigner, writeContract;
+let walletAddress    = null;
+let walletConnected  = false;
 let activeGameFilter = 'all';
 let activeTypeFilter = 'all';
+let selectedCType    = 0;   // 0=Battle default
+let CHALLENGES_CACHE = [];
+let LEADERBOARD_CACHE = [];
+let ACTIVITY_CACHE   = [];
 
-// INIT
-function init() {
+// ── Enum maps (must mirror contract exactly)
+const GAME_ENUM  = { axie:0, pixels:1, ragnarok:2, lumiterra:3, any:4, custom:5 };
+const GAME_NAMES = ['Axie Infinity','Pixels','Ragnarok','Lumiterra','Any Ronin','Custom'];
+const GAME_KEYS  = ['axie','pixels','ragnarok','lumiterra','any','custom'];
+const GAME_ICON  = ['⚔️','🌾','🏰','👹','💎','⭐'];
+const TYPE_KEYS  = ['battle','trade','social','farm','custom'];
+const TYPE_NAMES = ['Battle','Trade','Social','Farm','Custom'];
+
+// ════════════════════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════════════════════
+function fmtRON(wei) {
+  const n = parseFloat(ethers.formatEther(wei.toString()));
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+  return n.toFixed(2);
+}
+function fmtRONExact(wei) {
+  return parseFloat(ethers.formatEther(wei.toString())).toFixed(2);
+}
+function shortAddr(a) {
+  if (!a) return '';
+  return a.slice(0, 6) + '...' + a.slice(-4);
+}
+function addrInitials(a) {
+  return (a || '0x00').slice(2, 4).toUpperCase();
+}
+function daysLeftFn(endTime) {
+  const secs = Number(endTime) - Math.floor(Date.now() / 1000);
+  if (secs <= 0) return 0;
+  return Math.ceil(secs / 86400);
+}
+function progressPct(playerCount, maxPlayers) {
+  const p = Number(playerCount);
+  const m = Number(maxPlayers);
+  if (!m) return Math.min(80, p * 3);
+  return Math.min(100, Math.floor(p / m * 100));
+}
+
+// Convert raw contract Challenge struct → card-friendly object
+function normalize(c) {
+  const gn = Number(c.game);
+  const tn = Number(c.cType);
+  const dl = daysLeftFn(c.endTime);
+  const age = Math.floor(Date.now() / 1000) - Number(c.createdAt);
+  const pc  = Number(c.playerCount);
+  return {
+    id:        Number(c.id),
+    title:     c.title,
+    desc:      c.description,
+    game:      GAME_NAMES[gn] || 'Custom',
+    gameKey:   GAME_KEYS[gn]  || 'custom',
+    type:      TYPE_KEYS[tn]  || 'battle',
+    prize:     fmtRONExact(c.prizePool),
+    prizeWei:  c.prizePool,
+    entryFee:  c.entryFee,
+    players:   pc,
+    maxPlayers:Number(c.maxPlayers),
+    daysLeft:  dl,
+    progress:  progressPct(c.playerCount, c.maxPlayers),
+    status:    Number(c.status),
+    regOpen:   c.regOpen,
+    creator:   c.creator,
+    endTime:   Number(c.endTime),
+    createdAt: Number(c.createdAt),
+    icon:      GAME_ICON[gn] || '⭐',
+    hot:       pc > 10,
+    isNew:     age < 86400,
+    ending:    dl <= 2 && dl > 0,
+    tags:      [TYPE_KEYS[tn]],
+  };
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════════════════════════════
+async function init() {
+  // Read-only provider — no wallet needed
+  readProvider = new ethers.JsonRpcProvider(RPC_URL);
+  readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, readProvider);
+
   buildTicker();
+
+  // Auto-reconnect if wallet was connected before
+  if (window.ethereum) {
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      if (accounts.length) await _setupWallet(accounts[0]);
+    } catch (_) {}
+  }
+
+  await _loadAll();
+  _startEvents();
+}
+
+async function _loadAll() {
+  await loadProtocolStats();
+  await loadChallenges();
+  await loadActivity();
   buildDashboardChallenges();
   buildMiniLeaderboard();
   buildActivityFeed();
-  buildAllChallenges();
-  buildLeaderboard();
-  buildHistory();
 }
 
+// ════════════════════════════════════════════════════════════════════════
+//  WALLET
+// ════════════════════════════════════════════════════════════════════════
+async function toggleWallet() {
+  if (walletConnected) {
+    walletConnected = false;
+    walletAddress   = null;
+    writeProvider = writeSigner = writeContract = null;
+    const btn = document.getElementById('wallet-btn');
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="12" cy="14" r="2"/></svg> Connect Wallet`;
+    btn.classList.remove('connected');
+    return;
+  }
+
+  if (!window.ethereum) {
+    showToast('❌', '<strong>No wallet detected</strong><br><span>Install Ronin Wallet extension first.</span>');
+    return;
+  }
+
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    if (!accounts.length) return;
+
+    // Ensure correct network
+    const hexChain = await window.ethereum.request({ method: 'eth_chainId' });
+    if (parseInt(hexChain, 16) !== CHAIN_ID) {
+      try {
+        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_HEX }] });
+      } catch (sw) {
+        if (sw.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: CHAIN_HEX,
+              chainName: 'Ronin Saigon Testnet',
+              nativeCurrency: { name: 'RON', symbol: 'RON', decimals: 18 },
+              rpcUrls: [RPC_URL],
+              blockExplorerUrls: ['https://saigon-app.roninchain.com'],
+            }],
+          });
+        } else throw sw;
+      }
+    }
+
+    await _setupWallet(accounts[0]);
+    showToast('✅', `<strong>Wallet connected</strong><br><span>${shortAddr(accounts[0])} · Ronin Wallet</span>`, 'success');
+
+    if (document.getElementById('section-profile').classList.contains('active')) {
+      await loadProfile();
+    }
+  } catch (e) {
+    showToast('❌', `<strong>Connection failed</strong><br><span>${(e.message || '').slice(0, 70)}</span>`);
+  }
+}
+
+async function _setupWallet(address) {
+  walletAddress   = address;
+  walletConnected = true;
+  writeProvider   = new ethers.BrowserProvider(window.ethereum);
+  writeSigner     = await writeProvider.getSigner();
+  writeContract   = new ethers.Contract(CONTRACT_ADDRESS, ABI, writeSigner);
+
+  const btn = document.getElementById('wallet-btn');
+  btn.innerHTML = `<div class="wallet-dot"></div> ${shortAddr(address)}`;
+  btn.classList.add('connected');
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  CONTRACT READS
+// ════════════════════════════════════════════════════════════════════════
+async function loadProtocolStats() {
+  try {
+    const [totalC, distributed, , ] = await readContract.getProtocolStats();
+    const ids = Number(totalC) > 0
+      ? await readContract.getChallengeIds(0n, totalC)
+      : [];
+
+    let activePrize = 0n;
+    let activeCount = 0;
+    let totalPlayers = 0;
+
+    if (ids.length) {
+      const results = await Promise.all(ids.map(id => readContract.getChallenge(id).catch(() => null)));
+      results.forEach(c => {
+        if (!c || Number(c.status) !== 0) return;
+        activePrize += c.prizePool;
+        activeCount++;
+        totalPlayers += Number(c.playerCount);
+      });
+    }
+
+    const items = document.querySelectorAll('.stats-bar .stat-item');
+    if (items[0]) {
+      items[0].querySelector('.stat-value').innerHTML = `${fmtRON(activePrize)} <span class="unit">RON</span>`;
+      items[0].querySelector('.stat-change').textContent = 'Live prize pools';
+    }
+    if (items[1]) {
+      items[1].querySelector('.stat-value').textContent = activeCount;
+      items[1].querySelector('.stat-change').textContent = `${Number(totalC)} total created`;
+    }
+    if (items[2]) {
+      items[2].querySelector('.stat-value').textContent = totalPlayers.toLocaleString();
+      items[2].querySelector('.stat-change').textContent = 'across all challenges';
+    }
+    if (items[3]) {
+      items[3].querySelector('.stat-value').innerHTML = `${fmtRON(distributed)} <span class="unit">RON</span>`;
+      items[3].querySelector('.stat-change').textContent = '↑ all-time distributed';
+    }
+  } catch (e) { console.error('loadProtocolStats:', e); }
+}
+
+async function loadChallenges() {
+  try {
+    const total = await readContract.challengeCount();
+    if (total === 0n) { CHALLENGES_CACHE = []; return; }
+
+    const ids = await readContract.getChallengeIds(0n, total);
+    const raw = await Promise.all(ids.map(id => readContract.getChallenge(id).catch(() => null)));
+    CHALLENGES_CACHE = raw
+      .filter(c => c && Number(c.status) === 0)
+      .map(normalize);
+  } catch (e) { console.error('loadChallenges:', e); }
+}
+
+async function loadActivity() {
+  try {
+    const latest   = await readProvider.getBlockNumber();
+    const fromBlock = Math.max(0, latest - 5000);
+
+    const [evtCreated, evtJoined, evtClaimed] = await Promise.all([
+      readContract.queryFilter(readContract.filters.ChallengeCreated(), fromBlock, latest),
+      readContract.queryFilter(readContract.filters.PlayerJoined(),    fromBlock, latest),
+      readContract.queryFilter(readContract.filters.PrizeClaimed(),    fromBlock, latest),
+    ]);
+
+    const all = [
+      ...evtCreated.map(e => ({ type: 'create', block: e.blockNumber, text: `<strong>${shortAddr(e.args.creator)}</strong> created: ${e.args.title.slice(0, 28)}`, amount: `${fmtRONExact(e.args.prizePool)} RON prize`, time: 'recent' })),
+      ...evtJoined.map(e  => ({ type: 'join',   block: e.blockNumber, text: `<strong>${shortAddr(e.args.player)}</strong> joined challenge #${e.args.id}`,           amount: '', time: 'recent' })),
+      ...evtClaimed.map(e => ({ type: 'claim',  block: e.blockNumber, text: `<strong>${shortAddr(e.args.player)}</strong> claimed from #${e.args.id}`,               amount: `+${fmtRONExact(e.args.amount)} RON`, time: 'recent' })),
+    ];
+    ACTIVITY_CACHE = all.sort((a, b) => b.block - a.block).slice(0, 8);
+  } catch (e) { console.error('loadActivity:', e); }
+}
+
+async function loadLeaderboard() {
+  try {
+    const latest    = await readProvider.getBlockNumber();
+    const fromBlock = Math.max(0, latest - 50000);
+
+    const [evtJoined, evtCreated] = await Promise.all([
+      readContract.queryFilter(readContract.filters.PlayerJoined(),    fromBlock, latest),
+      readContract.queryFilter(readContract.filters.ChallengeCreated(), fromBlock, latest),
+    ]);
+
+    const addrSet = new Set();
+    evtJoined.forEach(e  => addrSet.add(e.args.player.toLowerCase()));
+    evtCreated.forEach(e => addrSet.add(e.args.creator.toLowerCase()));
+
+    if (!addrSet.size) { LEADERBOARD_CACHE = []; return; }
+
+    const addrs = [...addrSet];
+    const stats = await Promise.all(addrs.map(a => readContract.getPlayerStats(a).catch(() => null)));
+
+    LEADERBOARD_CACHE = addrs.map((addr, i) => {
+      if (!stats[i]) return null;
+      const [earned, wins, entered] = stats[i];
+      const w = Number(wins);
+      const e = Number(entered);
+      return {
+        addr,
+        name:      shortAddr(addr),
+        av:        addrInitials(addr),
+        wins:      w,
+        challenges:e,
+        winRate:   e > 0 ? Math.round(w / e * 100) : 0,
+        earned:    fmtRONExact(earned),
+        earnedWei: earned,
+        isYou:     walletAddress && addr === walletAddress.toLowerCase(),
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => (Number(b.earnedWei) - Number(a.earnedWei)));
+
+    LEADERBOARD_CACHE.forEach((p, i) => { p.rank = i + 1; });
+  } catch (e) { console.error('loadLeaderboard:', e); }
+}
+
+async function loadProfile() {
+  const nameEl = document.querySelector('.profile-name');
+  const addrEl = document.querySelector('.profile-address');
+  if (!walletConnected) {
+    if (nameEl) nameEl.textContent = 'Not Connected';
+    if (addrEl) addrEl.textContent = 'Connect your wallet to see your stats';
+    return;
+  }
+  try {
+    const [earned, wins, entered] = await readContract.getPlayerStats(walletAddress);
+    const earnedRON = fmtRONExact(earned);
+    const winRate   = Number(entered) > 0 ? Math.round(Number(wins) / Number(entered) * 100) : 0;
+
+    if (nameEl) nameEl.textContent = shortAddr(walletAddress);
+    if (addrEl) addrEl.textContent = `${walletAddress} · Ronin Wallet`;
+
+    // Profile avatar initials
+    const avEl = document.querySelector('.profile-avatar-lg');
+    if (avEl) avEl.textContent = addrInitials(walletAddress);
+
+    // Stats grid
+    const cards = document.querySelectorAll('.profile-stat-card .psc-val');
+    if (cards[0]) cards[0].innerHTML = `${earnedRON} <span class="unit">RON</span>`;
+    if (cards[1]) cards[1].textContent = Number(wins);
+    if (cards[2]) cards[2].innerHTML  = `${winRate}<span class="unit">%</span>`;
+    if (cards[3]) cards[3].textContent = Number(entered);
+
+    // Global rank
+    const myIdx = LEADERBOARD_CACHE.findIndex(p => p.addr === walletAddress.toLowerCase());
+    const rankEl = document.querySelector('.profile-header [style*="font-size:40px"]');
+    if (rankEl) rankEl.textContent = myIdx >= 0 ? `#${myIdx + 1}` : '--';
+
+    // Earn tracker
+    const bigEl = document.querySelector('.earn-big');
+    if (bigEl) bigEl.innerHTML = `${earnedRON} <span class="ron-sm">RON</span>`;
+
+    // Claimable prizes — scan all challenges
+    const claimableList = [];
+    for (const c of CHALLENGES_CACHE) {
+      try {
+        const amt = await readContract.claimable(c.id, walletAddress);
+        if (amt > 0n) claimableList.push({ id: c.id, title: c.title, amount: fmtRONExact(amt) });
+      } catch (_) {}
+    }
+    buildHistory(claimableList);
+  } catch (e) { console.error('loadProfile:', e); }
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  RENDER FUNCTIONS  (same signatures as original, now using real data)
+// ════════════════════════════════════════════════════════════════════════
 function buildTicker() {
   const t = document.getElementById('ticker');
-  const items = [...TICKER_ITEMS, ...TICKER_ITEMS];
-  t.innerHTML = items.map(i =>
-    `<span class="ticker-item">
-      <span class="live-dot" style="width:5px;height:5px;border-radius:50%;background:var(--accent);display:inline-block;flex-shrink:0"></span>
-      <span class="name">${i}</span>
-      <span class="sep">◆</span>
-    </span>`
+  const items = [
+    'GrindBoard live on Ronin Saigon', 'Create challenges · Earn RON',
+    `Contract: ${shortAddr(CONTRACT_ADDRESS)}`, 'Proof of Distribution active',
+    'Cross-game challenges now live', 'First mover advantage — build now',
+  ];
+  const doubled = [...items, ...items];
+  t.innerHTML = doubled.map(i =>
+    `<span class="ticker-item"><span style="width:5px;height:5px;border-radius:50%;background:var(--accent);display:inline-block;flex-shrink:0;margin-right:6px"></span><span class="name">${i}</span><span class="sep">◆</span></span>`
   ).join('');
 }
 
-function challengeCard(c, compact) {
-  const typeClass = { battle:'badge-battle', trade:'badge-trade', social:'badge-social', farm:'badge-farm' }[c.type] || 'badge-battle';
-  const typeLabel = { battle:'Battle', trade:'Trade', social:'Social', farm:'Farm' }[c.type] || 'Battle';
+function challengeCard(c) {
+  const typeClass = { battle: 'badge-battle', trade: 'badge-trade', social: 'badge-social', farm: 'badge-farm' }[c.type] || 'badge-battle';
+  const typeLabel = { battle: 'Battle', trade: 'Trade', social: 'Social', farm: 'Farm' }[c.type] || 'Battle';
   let cardClass = 'challenge-card';
-  if (c.hot) cardClass += ' hot';
-  if (c.isNew) cardClass += ' new';
+  if (c.hot)    cardClass += ' hot';
+  if (c.isNew)  cardClass += ' new';
   if (c.ending) cardClass += ' ending';
 
   return `<div class="${cardClass}" onclick="openDetail(${c.id})">
     <div class="card-badges">
       <span class="badge badge-game">${c.game}</span>
       <span class="badge ${typeClass}">${typeLabel}</span>
-      ${c.hot ? '<span class="badge badge-hot">🔥 Hot</span>' : ''}
-      ${c.isNew ? '<span class="badge badge-new">✨ New</span>' : ''}
-      ${c.ending ? '<span class="badge badge-ending">⏱ Ending Soon</span>' : ''}
+      ${c.hot    ? '<span class="badge badge-hot">🔥 Hot</span>'         : ''}
+      ${c.isNew  ? '<span class="badge badge-new">✨ New</span>'          : ''}
+      ${c.ending ? '<span class="badge badge-ending">⏱ Ending Soon</span>': ''}
     </div>
     <div class="card-title">${c.icon} ${c.title}</div>
     <div class="card-desc">${c.desc}</div>
-    <div class="progress-bar">
-      <div class="progress-fill" style="width:${c.progress}%"></div>
-    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${c.progress}%"></div></div>
     <div class="card-footer">
       <div class="card-prize">
         <div class="prize-label">Prize Pool</div>
         <div class="prize-amount">${c.prize} <span class="ron">RON</span></div>
       </div>
       <div class="card-meta">
-        <div class="meta-row">👥 <span class="val">${c.players}/${c.maxPlayers}</span></div>
+        <div class="meta-row">👥 <span class="val">${c.players}${c.maxPlayers > 0 ? '/'+c.maxPlayers : ''}</span></div>
         <div class="meta-row">⏳ <span class="val ${c.daysLeft <= 2 ? 'urgent' : ''}">${c.daysLeft}d left</span></div>
       </div>
     </div>
@@ -2192,30 +2515,28 @@ function challengeCard(c, compact) {
 
 function buildDashboardChallenges() {
   const el = document.getElementById('dashboard-challenges');
-  el.innerHTML = CHALLENGES.slice(0,6).map(c => challengeCard(c)).join('');
-}
+  if (!el) return;
+  const list = CHALLENGES_CACHE.slice(0, 6);
+  el.innerHTML = list.length
+    ? list.map(c => challengeCard(c)).join('')
+    : `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🏆</div><div class="empty-text">No challenges yet — create the first one!</div></div>`;
 
-function buildAllChallenges() {
-  const el = document.getElementById('page-challenges');
-  let filtered = CHALLENGES.filter(c => {
-    const gOk = activeGameFilter === 'all' || c.gameKey === activeGameFilter;
-    const tOk = activeTypeFilter === 'all' || c.type === activeTypeFilter;
-    return gOk && tOk;
-  });
-  const sortVal = document.getElementById('sort-select')?.value || 'prize';
-  if (sortVal === 'prize') filtered.sort((a,b) => b.prize - a.prize);
-  else if (sortVal === 'ending') filtered.sort((a,b) => a.daysLeft - b.daysLeft);
-  else if (sortVal === 'players') filtered.sort((a,b) => b.players - a.players);
-  else filtered.sort((a,b) => b.id - a.id);
-  el.innerHTML = filtered.length ? filtered.map(c => challengeCard(c)).join('') : `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-text">No challenges match this filter.</div></div>`;
+  const countEl = document.querySelector('.section-title .count');
+  if (countEl) countEl.textContent = `//${CHALLENGES_CACHE.length} active`;
 }
 
 function buildMiniLeaderboard() {
   const el = document.getElementById('mini-leaderboard');
-  el.innerHTML = PLAYERS.slice(0,7).map(p => {
-    const rankClass = p.rank <= 3 ? `rank-${p.rank}` : 'rank-other';
+  if (!el) return;
+  if (!LEADERBOARD_CACHE.length) {
+    el.innerHTML = `<div style="padding:20px;color:var(--text3);font-size:13px;text-align:center">No players yet. Be first!</div>`;
+    return;
+  }
+  el.innerHTML = LEADERBOARD_CACHE.slice(0, 7).map(p => {
+    const rkClass = p.rank <= 3 ? `rank-${p.rank}` : 'rank-other';
+    const medal   = p.rank <= 3 ? ['🥇', '🥈', '🥉'][p.rank - 1] : p.rank;
     return `<div class="leaderboard-row" onclick="showSection('leaderboard')">
-      <div class="rank-num ${rankClass}">${p.rank <= 3 ? ['🥇','🥈','🥉'][p.rank-1] : p.rank}</div>
+      <div class="rank-num ${rkClass}">${medal}</div>
       <div class="player-info">
         <div class="player-name">${p.isYou ? '⭐ ' : ''}${p.name}</div>
         <div class="player-address">${p.addr}</div>
@@ -2227,46 +2548,80 @@ function buildMiniLeaderboard() {
 }
 
 function buildActivityFeed() {
-  const dotClass = { win:'dot-win', join:'dot-join', create:'dot-create', claim:'dot-claim' };
   const el = document.getElementById('activity-feed');
-  el.innerHTML = ACTIVITY.map(a => `
+  if (!el) return;
+  const dotClass = { win: 'dot-win', join: 'dot-join', create: 'dot-create', claim: 'dot-claim' };
+  if (!ACTIVITY_CACHE.length) {
+    el.innerHTML = `<div style="padding:20px;color:var(--text3);font-size:13px;text-align:center">Waiting for on-chain activity...</div>`;
+    return;
+  }
+  el.innerHTML = ACTIVITY_CACHE.map(a => `
     <div class="activity-item">
       <div class="activity-dot ${dotClass[a.type] || 'dot-join'}"></div>
       <div>
         <div class="activity-text">${a.text} ${a.amount ? `<span class="amount">${a.amount}</span>` : ''}</div>
         <div class="activity-time">${a.time}</div>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
+}
+
+function buildAllChallenges() {
+  const el = document.getElementById('page-challenges');
+  if (!el) return;
+
+  let list = CHALLENGES_CACHE.filter(c => {
+    const gOk = activeGameFilter === 'all' || c.gameKey === activeGameFilter;
+    const tOk = activeTypeFilter === 'all' || c.type   === activeTypeFilter;
+    return gOk && tOk;
+  });
+
+  const sort = document.getElementById('sort-select')?.value || 'prize';
+  if      (sort === 'prize')   list.sort((a, b) => parseFloat(b.prize)   - parseFloat(a.prize));
+  else if (sort === 'ending')  list.sort((a, b) => a.daysLeft  - b.daysLeft);
+  else if (sort === 'players') list.sort((a, b) => b.players   - a.players);
+  else                         list.sort((a, b) => b.id        - a.id);
+
+  el.innerHTML = list.length
+    ? list.map(c => challengeCard(c)).join('')
+    : `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-text">No challenges match this filter yet.</div></div>`;
 }
 
 function buildLeaderboard() {
   const podium = document.getElementById('podium');
-  const top3 = PLAYERS.slice(0,3);
-  const order = [top3[1], top3[0], top3[2]];
-  const classes = ['second','first','third'];
-  const rankClasses = ['rank-2','rank-1','rank-3'];
-  const rankNums = ['2','1','3'];
-  const avClasses = ['av-2','av-1','av-3'];
-  podium.innerHTML = order.map((p,i) => `
-    <div class="lb-podium ${classes[i]}" onclick="showSection('profile')">
-      <div class="podium-rank ${rankClasses[i]}">#${rankNums[i]}</div>
-      <div class="podium-avatar ${avClasses[i]}">${p.av}</div>
+  const rows   = document.getElementById('lb-rows');
+  if (!podium || !rows) return;
+
+  if (!LEADERBOARD_CACHE.length) {
+    podium.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text3)">No players yet. Be the first grinder!</div>`;
+    rows.innerHTML   = '';
+    return;
+  }
+
+  const top3   = LEADERBOARD_CACHE.slice(0, 3);
+  const ordIdx = top3.length >= 3 ? [1, 0, 2] : [0];
+  const cls    = ['second', 'first', 'third'];
+  const rkCls  = ['rank-2', 'rank-1', 'rank-3'];
+  const avCls  = ['av-2',   'av-1',   'av-3'];
+  const rkNum  = ['2', '1', '3'];
+
+  podium.innerHTML = ordIdx.map((ri, i) => {
+    const p = top3[ri];
+    return `<div class="lb-podium ${cls[i]}">
+      <div class="podium-rank ${rkCls[i]}">#${rkNum[i]}</div>
+      <div class="podium-avatar ${avCls[i]}">${p.av}</div>
       <div class="podium-name">${p.name}</div>
       <div class="podium-address">${p.addr}</div>
       <div class="podium-earned">${p.earned} RON</div>
       <div class="podium-sub">${p.wins} wins · ${p.winRate}% rate</div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 
-  const rows = document.getElementById('lb-rows');
-  rows.innerHTML = PLAYERS.map(p => {
-    let rankClass = 'lb-rank';
-    let rankExtra = '';
-    if (p.rank <= 3) { rankClass += ' top3'; rankExtra = ` r${p.rank}`; }
-    const rankDisp = p.rank <= 3 ? ['🥇','🥈','🥉'][p.rank-1] : `#${p.rank}`;
-    return `<div class="lb-row ${p.isYou ? 'you' : ''}" onclick="showSection('profile')">
-      <div class="${rankClass}${rankExtra}">${rankDisp}</div>
+  rows.innerHTML = LEADERBOARD_CACHE.map(p => {
+    const isTop = p.rank <= 3;
+    const medal = isTop ? ['🥇', '🥈', '🥉'][p.rank - 1] : `#${p.rank}`;
+    const rkCl  = `lb-rank${isTop ? ` top3 r${p.rank}` : ''}`;
+    return `<div class="lb-row ${p.isYou ? 'you' : ''}">
+      <div class="${rkCl}">${medal}</div>
       <div class="lb-player">
         <div class="lb-avatar">${p.av}</div>
         <div>
@@ -2282,46 +2637,259 @@ function buildLeaderboard() {
   }).join('');
 }
 
-function buildHistory() {
+function buildHistory(claimableList) {
   const el = document.getElementById('history-list');
-  el.innerHTML = HISTORY.map(h => `
+  if (!el) return;
+  if (!claimableList || !claimableList.length) {
+    el.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">No claimable prizes right now.</div>`;
+    return;
+  }
+  el.innerHTML = claimableList.map(h => `
     <div class="history-item">
-      <div class="history-status status-${h.status}"></div>
+      <div class="history-status status-won"></div>
       <div class="history-info">
-        <div class="history-name">${h.name}</div>
-        <div class="history-game">${h.game}</div>
+        <div class="history-name">${h.title}</div>
+        <div class="history-game">Challenge #${h.id}</div>
       </div>
-      <div class="history-result result-${h.status}">${h.result}</div>
-    </div>
-  `).join('');
+      <div style="text-align:right">
+        <div class="history-result result-won">+${h.amount} RON</div>
+        <button onclick="claimPrizeBtn(${h.id})" style="margin-top:4px;font-size:11px;padding:4px 12px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:6px;color:#000;font-weight:700;cursor:pointer">Claim</button>
+      </div>
+    </div>`).join('');
 }
 
-// NAV
+// ════════════════════════════════════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════════════════════════════════════
 function showSection(name) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
   document.getElementById('section-' + name).classList.add('active');
-  document.getElementById('nav-' + name).classList.add('active');
-  window.scrollTo(0,0);
-  if (name === 'challenges') buildAllChallenges();
+  document.getElementById('nav-'     + name).classList.add('active');
+  window.scrollTo(0, 0);
+  if (name === 'challenges')  buildAllChallenges();
+  if (name === 'leaderboard') loadLeaderboard().then(() => buildLeaderboard());
+  if (name === 'profile')     loadProfile();
   return false;
 }
 
-// WALLET
-function toggleWallet() {
-  walletConnected = !walletConnected;
-  const btn = document.getElementById('wallet-btn');
-  if (walletConnected) {
-    btn.innerHTML = '<div class="wallet-dot"></div> 0x7f3a...4b2c';
-    btn.classList.add('connected');
-    showToast('✅','<strong>Wallet connected</strong><br><span>0x7f3a...4b2c · Ronin Wallet</span>','success');
+// ════════════════════════════════════════════════════════════════════════
+//  MODALS
+// ════════════════════════════════════════════════════════════════════════
+function openCreate()         { document.getElementById('create-modal').classList.add('open'); }
+function closeCreate()        { document.getElementById('create-modal').classList.remove('open'); }
+function handleModalClick(e)  { if (e.target === document.getElementById('create-modal'))  closeCreate(); }
+function handleDetailClick(e) { if (e.target === document.getElementById('detail-modal'))  document.getElementById('detail-modal').classList.remove('open'); }
+
+function selectType(el, type) {
+  document.querySelectorAll('.type-option').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+  selectedCType = TYPE_KEYS.indexOf(type);
+  if (selectedCType < 0) selectedCType = 0;
+}
+
+function updateFees() {
+  const prize   = parseFloat(document.getElementById('c-prize').value) || 0;
+  const preview = document.getElementById('fee-preview');
+  if (prize > 0) {
+    preview.style.display = 'block';
+    const fee = prize * 0.05;
+    document.getElementById('fp-prize').textContent = prize.toFixed(2) + ' RON';
+    document.getElementById('fp-fee').textContent   = fee.toFixed(2)   + ' RON';
+    document.getElementById('fp-total').textContent = (prize + fee).toFixed(2) + ' RON';
   } else {
-    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="12" cy="14" r="2"/></svg> Connect Wallet`;
-    btn.classList.remove('connected');
+    preview.style.display = 'none';
   }
 }
 
-// FILTERS
+// ════════════════════════════════════════════════════════════════════════
+//  CONTRACT WRITES
+// ════════════════════════════════════════════════════════════════════════
+async function submitChallenge() {
+  const title    = document.getElementById('c-title').value.trim();
+  const desc     = document.getElementById('c-desc').value.trim();
+  const gameStr  = document.getElementById('c-game').value;
+  const durDays  = parseInt(document.getElementById('c-duration').value || '7');
+  const prizeRON = parseFloat(document.getElementById('c-prize').value);
+  const maxP     = parseInt(document.getElementById('c-maxplayers').value || '0') || 0;
+
+  if (!title)                    { showToast('⚠️', '<strong>Title is required</strong>'); return; }
+  if (!gameStr)                  { showToast('⚠️', '<strong>Select a game</strong>');     return; }
+  if (!prizeRON || prizeRON < 0.01) { showToast('⚠️', '<strong>Min prize is 0.01 RON</strong>'); return; }
+  if (!walletConnected)          { showToast('🔗', '<strong>Connect wallet first</strong>'); return; }
+
+  const gameEnum = GAME_ENUM[gameStr] ?? 4;
+  const endTime  = Math.floor(Date.now() / 1000) + (durDays * 86400);
+
+  // Total to send = prize + 5% fee (contract takes fee on-chain)
+  const prizeWei = ethers.parseEther(prizeRON.toFixed(6));
+  const feeWei   = prizeWei * 500n / 10000n;
+  const totalWei = prizeWei + feeWei;
+
+  closeCreate();
+  showToast('⏳', '<strong>Confirm in your wallet...</strong>');
+
+  try {
+    const tx = await writeContract.createChallenge(
+      title,
+      desc || 'Complete this challenge to win.',
+      '',           // verifyUrl — empty for now
+      gameEnum,     // Game enum
+      selectedCType,// ChallengeType enum
+      0,            // SplitMode: WinnerTakesAll
+      0,            // startTime: 0 = now
+      endTime,
+      maxP,
+      0,            // entryFee: free
+      1,            // topN: 1 for WinnerTakesAll
+      { value: totalWei }
+    );
+    showToast('⏳', `<strong>Deploying on-chain...</strong><br><span>Tx: ${shortAddr(tx.hash)}</span>`);
+    await tx.wait();
+    showToast('🚀', '<strong>Challenge is live!</strong><br><span>Players can now join on Ronin.</span>', 'success');
+
+    await loadChallenges();
+    await loadProtocolStats();
+    buildDashboardChallenges();
+    buildAllChallenges();
+  } catch (e) {
+    const msg = e.reason || e.shortMessage || e.message || 'Transaction failed';
+    showToast('❌', `<strong>Failed</strong><br><span>${msg.slice(0, 80)}</span>`);
+  }
+}
+
+async function openDetail(id) {
+  const c = CHALLENGES_CACHE.find(ch => ch.id === id);
+  if (!c) return;
+
+  let isReg     = false;
+  let myClaimable = '0';
+
+  if (walletConnected) {
+    try {
+      [isReg] = await Promise.all([readContract.registered(id, walletAddress)]);
+      const clm = await readContract.claimable(id, walletAddress);
+      myClaimable = fmtRONExact(clm);
+    } catch (_) {}
+  }
+
+  const modal   = document.getElementById('detail-modal');
+  const content = document.getElementById('detail-content');
+
+  content.innerHTML = `
+    <button class="modal-close" onclick="document.getElementById('detail-modal').classList.remove('open')">×</button>
+    <div class="detail-header">
+      <div class="detail-icon">${c.icon}</div>
+      <div class="detail-info">
+        <div class="card-badges" style="margin-bottom:8px">
+          <span class="badge badge-game">${c.game}</span>
+          ${c.hot    ? '<span class="badge badge-hot">🔥 Hot</span>'         : ''}
+          ${c.ending ? '<span class="badge badge-ending">⏱ Ending Soon</span>': ''}
+        </div>
+        <div class="detail-title">${c.title}</div>
+      </div>
+      <div>
+        <div class="detail-prize-big">${c.prize} <span class="ron-label">RON</span></div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">PRIZE POOL</div>
+      </div>
+    </div>
+    <div class="detail-stats-row">
+      <div class="detail-stat">
+        <div class="detail-stat-val">${c.players}</div>
+        <div class="detail-stat-label">Players joined</div>
+      </div>
+      <div class="detail-stat">
+        <div class="detail-stat-val" style="color:${c.daysLeft <= 2 ? 'var(--danger)' : 'var(--text)'}">${c.daysLeft}d</div>
+        <div class="detail-stat-label">Time remaining</div>
+      </div>
+      <div class="detail-stat">
+        <div class="detail-stat-val">${c.maxPlayers > 0 ? c.maxPlayers - c.players : '∞'}</div>
+        <div class="detail-stat-label">Spots left</div>
+      </div>
+    </div>
+    <div class="detail-requirements">
+      <div class="req-title">Requirements</div>
+      <div class="req-item"><span class="req-check">✓</span> Active ${c.game} account</div>
+      <div class="req-item"><span class="req-check">✓</span> Ronin Wallet connected</div>
+      <div class="req-item"><span class="req-x">○</span> ${c.desc}</div>
+      <div class="req-item"><span class="req-x">○</span> Submit proof before deadline</div>
+    </div>
+    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px">Progress to capacity</div>
+    <div class="progress-bar" style="height:5px;margin-bottom:20px">
+      <div class="progress-fill" style="width:${c.progress}%"></div>
+    </div>
+    ${parseFloat(myClaimable) > 0
+      ? `<button class="join-btn" style="background:var(--accent3);color:#000;margin-bottom:10px" onclick="claimPrizeBtn(${id})">💰 Claim ${myClaimable} RON Prize</button>`
+      : ''}
+    <button class="join-btn"
+      ${isReg ? 'disabled style="opacity:0.55;cursor:not-allowed"' : ''}
+      onclick="joinChallenge(${id})">
+      ${isReg ? '✅ Already Joined' : walletConnected ? '⚡ Join Challenge — Free Entry' : '🔗 Connect Wallet to Join'}
+    </button>`;
+
+  modal.classList.add('open');
+}
+
+async function joinChallenge(id) {
+  if (!walletConnected) {
+    document.getElementById('detail-modal').classList.remove('open');
+    showToast('🔗', '<strong>Connect wallet first</strong><br><span>Click Connect Wallet.</span>');
+    return;
+  }
+  document.getElementById('detail-modal').classList.remove('open');
+  showToast('⏳', '<strong>Confirm in your wallet...</strong>');
+
+  try {
+    const c       = CHALLENGES_CACHE.find(ch => ch.id === id);
+    const entryFee = c?.entryFee || 0n;
+    const tx = await writeContract.register(id, { value: entryFee });
+    showToast('⏳', `<strong>Joining...</strong><br><span>Tx: ${shortAddr(tx.hash)}</span>`);
+    await tx.wait();
+    showToast('⚡', '<strong>Challenge joined!</strong><br><span>Good luck, grinder. Track in your profile.</span>', 'success');
+
+    await loadChallenges();
+    await loadProtocolStats();
+    buildDashboardChallenges();
+    buildAllChallenges();
+  } catch (e) {
+    const msg = e.reason || e.shortMessage || e.message || 'Transaction failed';
+    showToast('❌', `<strong>Failed</strong><br><span>${msg.slice(0, 80)}</span>`);
+  }
+}
+
+async function claimPrizeBtn(id) {
+  if (!walletConnected) { showToast('🔗', '<strong>Connect wallet first</strong>'); return; }
+  showToast('⏳', '<strong>Confirm in your wallet...</strong>');
+  try {
+    const tx = await writeContract.claimPrize(id);
+    showToast('⏳', `<strong>Claiming...</strong><br><span>Tx: ${shortAddr(tx.hash)}</span>`);
+    await tx.wait();
+    showToast('💰', '<strong>Prize claimed!</strong><br><span>RON sent to your wallet.</span>', 'success');
+    await loadProfile();
+  } catch (e) {
+    const msg = e.reason || e.shortMessage || e.message || 'Transaction failed';
+    showToast('❌', `<strong>Failed</strong><br><span>${msg.slice(0, 80)}</span>`);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  REAL-TIME EVENT LISTENER
+// ════════════════════════════════════════════════════════════════════════
+function _startEvents() {
+  // Lightweight polling fallback (WS not reliably available on Saigon)
+  setInterval(async () => {
+    await loadActivity();
+    buildActivityFeed();
+    // Refresh challenges every 30s
+    await loadChallenges();
+    buildDashboardChallenges();
+    if (document.getElementById('section-challenges').classList.contains('active')) buildAllChallenges();
+  }, 30000);
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  FILTER EVENT LISTENERS
+// ════════════════════════════════════════════════════════════════════════
 document.addEventListener('click', function(e) {
   if (e.target.matches('#game-tabs .filter-tab')) {
     document.querySelectorAll('#game-tabs .filter-tab').forEach(t => t.classList.remove('active'));
@@ -2341,155 +2909,20 @@ document.addEventListener('change', function(e) {
   if (e.target.id === 'sort-select') buildAllChallenges();
 });
 
-// CREATE MODAL
-function openCreate() {
-  document.getElementById('create-modal').classList.add('open');
-}
-
-function closeCreate() {
-  document.getElementById('create-modal').classList.remove('open');
-}
-
-function handleModalClick(e) {
-  if (e.target === document.getElementById('create-modal')) closeCreate();
-}
-
-function selectType(el, type) {
-  document.querySelectorAll('.type-option').forEach(o => o.classList.remove('active'));
-  el.classList.add('active');
-}
-
-function updateFees() {
-  const prize = parseFloat(document.getElementById('c-prize').value) || 0;
-  const preview = document.getElementById('fee-preview');
-  if (prize > 0) {
-    preview.style.display = 'block';
-    const fee = prize * 0.05;
-    document.getElementById('fp-prize').textContent = prize.toFixed(2) + ' RON';
-    document.getElementById('fp-fee').textContent = fee.toFixed(2) + ' RON';
-    document.getElementById('fp-total').textContent = (prize + fee).toFixed(2) + ' RON';
-  } else {
-    preview.style.display = 'none';
-  }
-}
-
-function submitChallenge() {
-  const title = document.getElementById('c-title').value.trim();
-  const prize = document.getElementById('c-prize').value;
-  const game = document.getElementById('c-game').value;
-  if (!title || !prize || !game) {
-    showToast('⚠️','<strong>Missing fields</strong><br><span>Please fill in all required fields.</span>');
-    return;
-  }
-  if (!walletConnected) {
-    showToast('🔗','<strong>Connect your wallet first</strong><br><span>Click Connect Wallet to proceed.</span>');
-    return;
-  }
-  closeCreate();
-  showToast('🚀','<strong>Challenge deployed!</strong><br><span>Your challenge is now live on Ronin.</span>','success');
-}
-
-// DETAIL MODAL
-function openDetail(id) {
-  const c = CHALLENGES.find(ch => ch.id === id);
-  if (!c) return;
-  const modal = document.getElementById('detail-modal');
-  const content = document.getElementById('detail-content');
-
-  content.innerHTML = `
-    <button class="modal-close" onclick="document.getElementById('detail-modal').classList.remove('open')">×</button>
-    <div class="detail-header">
-      <div class="detail-icon">${c.icon}</div>
-      <div class="detail-info">
-        <div class="card-badges" style="margin-bottom:8px">
-          <span class="badge badge-game">${c.game}</span>
-          ${c.hot ? '<span class="badge badge-hot">🔥 Hot</span>' : ''}
-          ${c.ending ? '<span class="badge badge-ending">⏱ Ending Soon</span>' : ''}
-        </div>
-        <div class="detail-title">${c.title}</div>
-      </div>
-      <div>
-        <div class="detail-prize-big">${c.prize} <span class="ron-label">RON</span></div>
-        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">PRIZE POOL</div>
-      </div>
-    </div>
-    <div class="detail-stats-row">
-      <div class="detail-stat">
-        <div class="detail-stat-val">${c.players}</div>
-        <div class="detail-stat-label">Players joined</div>
-      </div>
-      <div class="detail-stat">
-        <div class="detail-stat-val" style="color:${c.daysLeft <= 2 ? 'var(--danger)' : 'var(--text)'}">${c.daysLeft}d</div>
-        <div class="detail-stat-label">Time remaining</div>
-      </div>
-      <div class="detail-stat">
-        <div class="detail-stat-val">${c.maxPlayers - c.players}</div>
-        <div class="detail-stat-label">Spots left</div>
-      </div>
-    </div>
-    <div class="detail-requirements">
-      <div class="req-title">Requirements</div>
-      <div class="req-item"><span class="req-check">✓</span> Active ${c.game} account</div>
-      <div class="req-item"><span class="req-check">✓</span> Ronin Wallet connected</div>
-      <div class="req-item"><span class="req-x">○</span> Complete: ${c.desc}</div>
-      <div class="req-item"><span class="req-x">○</span> Submit proof before deadline</div>
-    </div>
-    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px">Progress to capacity</div>
-    <div class="progress-bar" style="height:5px;margin-bottom:20px">
-      <div class="progress-fill" style="width:${c.progress}%"></div>
-    </div>
-    <button class="join-btn" onclick="joinChallenge(${c.id})">
-      ${walletConnected ? '⚡ Join Challenge — Free Entry' : '🔗 Connect Wallet to Join'}
-    </button>
-  `;
-  modal.classList.add('open');
-}
-
-function handleDetailClick(e) {
-  if (e.target === document.getElementById('detail-modal')) {
-    document.getElementById('detail-modal').classList.remove('open');
-  }
-}
-
-function joinChallenge(id) {
-  if (!walletConnected) {
-    document.getElementById('detail-modal').classList.remove('open');
-    showToast('🔗','<strong>Connect your wallet first</strong><br><span>You need a Ronin Wallet to join.</span>');
-    return;
-  }
-  document.getElementById('detail-modal').classList.remove('open');
-  showToast('⚡','<strong>Challenge joined!</strong><br><span>Good luck, grinder. Track progress in your profile.</span>','success');
-}
-
-// TOAST
+// ════════════════════════════════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════════════════════════════════
 function showToast(icon, text, type) {
   const toast = document.getElementById('toast');
-  document.getElementById('toast-icon').innerHTML = icon;
-  document.getElementById('toast-text').innerHTML = text;
+  document.getElementById('toast-icon').innerHTML  = icon;
+  document.getElementById('toast-text').innerHTML  = text;
   toast.className = 'toast show' + (type ? ' ' + type : '');
-  setTimeout(() => { toast.classList.remove('show'); }, 3500);
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(() => toast.classList.remove('show'), 4000);
 }
 
-// Simulate live activity updates
-function simulateActivity() {
-  const newActivities = [
-    { type:"win", text:"<strong>RoninWhale</strong> won Ragnarok Guild Conquest", amount:"+350 RON", time:"just now" },
-    { type:"join", text:"<strong>0x8f2c...7b</strong> joined Pixels Harvest Festival", amount:"", time:"just now" },
-    { type:"create", text:"<strong>AxieGod.ron</strong> created a new challenge", amount:"500 RON prize", time:"just now" },
-    { type:"claim", text:"<strong>DeFiQueen</strong> claimed her weekly earnings", amount:"+142 RON", time:"just now" },
-  ];
-  setInterval(() => {
-    const a = newActivities[Math.floor(Math.random() * newActivities.length)];
-    ACTIVITY.unshift({ ...a });
-    if (ACTIVITY.length > 8) ACTIVITY.pop();
-    if (document.getElementById('section-dashboard').classList.contains('active')) {
-      buildActivityFeed();
-    }
-  }, 8000);
-}
-
-init();
-simulateActivity();
+// ════════════════════════════════════════════════════════════════════════
+//  START
+// ════════════════════════════════════════════════════════════════════════
+window.addEventListener('load', init);
 </script>
-</body>
-</html>
