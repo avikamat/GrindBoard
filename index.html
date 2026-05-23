@@ -2093,7 +2093,7 @@ const CHAIN_HEX        = '0x7E5';
 const RPC_URL          = 'https://saigon-testnet.roninchain.com/rpc';
  
 // ── Ronin only supports legacy transactions — must set gasPrice explicitly
-const TX_OPTS = { type: 0, gasPrice: ethers.parseUnits('20', 'gwei'), gasLimit: 600000 };
+const TX_OPTS = { gasLimit: 500000 };
  
 const ABI = [
   'function createChallenge(string,string,string,uint8,uint8,uint8,uint256,uint256,uint256,uint256,uint256) payable returns (uint256)',
@@ -2284,9 +2284,18 @@ async function _setupWallet(address) {
   walletAddress   = address;
   walletConnected = true;
   writeProvider   = new ethers.BrowserProvider(window.ronin.provider);
-  writeSigner     = await writeProvider.getSigner();
-  writeContract   = new ethers.Contract(CONTRACT_ADDRESS, ABI, writeSigner);
- 
+
+  // CRITICAL FIX: Ronin does not support EIP-1559.
+  // Override getFeeData so ethers v6 never tries to fetch maxFeePerGas.
+  writeProvider.getFeeData = async () => ({
+    gasPrice:             ethers.parseUnits('20', 'gwei'),
+    maxFeePerGas:         null,
+    maxPriorityFeePerGas: null,
+  });
+
+  writeSigner   = await writeProvider.getSigner();
+  writeContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, writeSigner);
+
   const btn = document.getElementById('wallet-btn');
   btn.innerHTML = `<div class="wallet-dot"></div> ${shortAddr(address)}`;
   btn.classList.add('connected');
