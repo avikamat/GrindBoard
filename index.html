@@ -2093,7 +2093,7 @@ const CHAIN_HEX        = '0x7E5';
 const RPC_URL          = 'https://saigon-testnet.roninchain.com/rpc';
  
 // ── Ronin only supports legacy transactions — must set gasPrice explicitly
-const TX_OPTS = { gasPrice: ethers.parseUnits('20', 'gwei') };
+const TX_OPTS = { type: 0, gasPrice: ethers.parseUnits('20', 'gwei'), gasLimit: 600000 };
  
 const ABI = [
   'function createChallenge(string,string,string,uint8,uint8,uint8,uint256,uint256,uint256,uint256,uint256) payable returns (uint256)',
