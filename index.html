@@ -2717,7 +2717,7 @@ async function submitChallenge() {
  
   closeCreate();
   showToast('⏳', '<strong>Confirm in your wallet...</strong>');
- 
+ console.log('Sending tx with:', { gameEnum, selectedCType, endTime, totalWei: totalWei.toString() });
   try {
     const tx = await writeContract.createChallenge(
       title,
