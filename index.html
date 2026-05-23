@@ -2703,23 +2703,23 @@ async function submitChallenge() {
   const durDays  = parseInt(document.getElementById('c-duration').value || '7');
   const prizeRON = parseFloat(document.getElementById('c-prize').value);
   const maxP     = parseInt(document.getElementById('c-maxplayers').value || '0') || 0;
- 
+
   if (!title)                       { showToast('⚠️', '<strong>Title is required</strong>');      return; }
   if (!gameStr)                     { showToast('⚠️', '<strong>Select a game</strong>');          return; }
   if (!prizeRON || prizeRON < 0.01) { showToast('⚠️', '<strong>Min prize is 0.01 RON</strong>'); return; }
   if (!walletConnected)             { showToast('🔗', '<strong>Connect wallet first</strong>');   return; }
- 
+
   const gameEnum = GAME_ENUM[gameStr] ?? 4;
   const endTime  = Math.floor(Date.now() / 1000) + (durDays * 86400);
   const prizeWei = ethers.parseEther(prizeRON.toFixed(6));
   const feeWei   = prizeWei * 500n / 10000n;
   const totalWei = prizeWei + feeWei;
- 
+
   closeCreate();
   showToast('⏳', '<strong>Confirm in your wallet...</strong>');
- console.log('Sending tx with:', { gameEnum, selectedCType, endTime, totalWei: totalWei.toString() });
+
   try {
-    const tx = await writeContract.createChallenge(
+    const txData = await writeContract.createChallenge.populateTransaction(
       title,
       desc || 'Complete this challenge to win.',
       '',
@@ -2731,8 +2731,14 @@ async function submitChallenge() {
       maxP,
       0,
       1,
-      { ...TX_OPTS, value: totalWei }   // ← gas fix
+      { value: totalWei, gasLimit: 500000 }
     );
+    delete txData.maxFeePerGas;
+    delete txData.maxPriorityFeePerGas;
+    txData.type     = 0;
+    txData.gasPrice = ethers.parseUnits('20', 'gwei');
+
+    const tx = await writeSigner.sendTransaction(txData);
     showToast('⏳', `<strong>Deploying on-chain...</strong><br><span>Tx: ${shortAddr(tx.hash)}</span>`);
     await tx.wait();
     showToast('🚀', '<strong>Challenge is live!</strong><br><span>Players can now join on Ronin.</span>', 'success');
@@ -2741,6 +2747,7 @@ async function submitChallenge() {
     buildDashboardChallenges();
     buildAllChallenges();
   } catch (e) {
+    console.error('FULL ERROR:', e);
     const msg = e.reason || e.shortMessage || e.message || 'Transaction failed';
     showToast('❌', `<strong>Failed</strong><br><span>${msg.slice(0, 80)}</span>`);
   }
@@ -2821,19 +2828,25 @@ async function openDetail(id) {
 async function joinChallenge(id) {
   if (!walletConnected) {
     document.getElementById('detail-modal').classList.remove('open');
-    showToast('🔗', '<strong>Connect wallet first</strong><br><span>Click Connect Wallet.</span>');
+    showToast('🔗', '<strong>Connect wallet first</strong>');
     return;
   }
   document.getElementById('detail-modal').classList.remove('open');
   showToast('⏳', '<strong>Confirm in your wallet...</strong>');
- 
+
   try {
     const c        = CHALLENGES_CACHE.find(ch => ch.id === id);
     const entryFee = c?.entryFee || 0n;
-    const tx = await writeContract.register(
-      id,
-      { ...TX_OPTS, value: entryFee }   // ← gas fix
+
+    const txData = await writeContract.register.populateTransaction(
+      id, { value: entryFee, gasLimit: 200000 }
     );
+    delete txData.maxFeePerGas;
+    delete txData.maxPriorityFeePerGas;
+    txData.type     = 0;
+    txData.gasPrice = ethers.parseUnits('20', 'gwei');
+
+    const tx = await writeSigner.sendTransaction(txData);
     showToast('⏳', `<strong>Joining...</strong><br><span>Tx: ${shortAddr(tx.hash)}</span>`);
     await tx.wait();
     showToast('⚡', '<strong>Challenge joined!</strong><br><span>Good luck, grinder.</span>', 'success');
@@ -2842,6 +2855,7 @@ async function joinChallenge(id) {
     buildDashboardChallenges();
     buildAllChallenges();
   } catch (e) {
+    console.error('FULL ERROR:', e);
     const msg = e.reason || e.shortMessage || e.message || 'Transaction failed';
     showToast('❌', `<strong>Failed</strong><br><span>${msg.slice(0, 80)}</span>`);
   }
@@ -2851,17 +2865,25 @@ async function claimPrizeBtn(id) {
   if (!walletConnected) { showToast('🔗', '<strong>Connect wallet first</strong>'); return; }
   showToast('⏳', '<strong>Confirm in your wallet...</strong>');
   try {
-    const tx = await writeContract.claimPrize(id, TX_OPTS);   // ← gas fix
+    const txData = await writeContract.claimPrize.populateTransaction(
+      id, { gasLimit: 150000 }
+    );
+    delete txData.maxFeePerGas;
+    delete txData.maxPriorityFeePerGas;
+    txData.type     = 0;
+    txData.gasPrice = ethers.parseUnits('20', 'gwei');
+
+    const tx = await writeSigner.sendTransaction(txData);
     showToast('⏳', `<strong>Claiming...</strong><br><span>Tx: ${shortAddr(tx.hash)}</span>`);
     await tx.wait();
     showToast('💰', '<strong>Prize claimed!</strong><br><span>RON sent to your wallet.</span>', 'success');
     await loadProfile();
   } catch (e) {
+    console.error('FULL ERROR:', e);
     const msg = e.reason || e.shortMessage || e.message || 'Transaction failed';
     showToast('❌', `<strong>Failed</strong><br><span>${msg.slice(0, 80)}</span>`);
   }
 }
- 
 // ════════════════════════════════════════════════════════════════════════
 //  REAL-TIME POLLING
 // ════════════════════════════════════════════════════════════════════════
